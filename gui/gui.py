@@ -7,8 +7,9 @@ Created on Thu Jun 22 23:22:08 2017
 
 import sys
 import os
+import json
 import datetime
-from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QDialog, QPushButton, QMessageBox
+from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QDialog, QPushButton, QMessageBox, QWidget
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
@@ -23,14 +24,34 @@ class DataViewerBase(QMainWindow):
         Initialization.
         """
         super().__init__()
-        self.nowDir = "./"
+        self.initInnerParameters()
         self.initGui()
+    
+    def initInnerParameters(self):
+        self._currentDir = os.path.dirname(__file__)
+        self._online = False
+        self._closing_dialog = True
+        if os.path.exists(os.path.join(os.path.dirname(__file__), "config.json")):
+            with open(os.path.join(os.path.dirname(__file__), "config.json"),'r') as ff:
+                config = json.load(ff)
+            if config.get("currentDir") is not None:
+                if isinstance(config.get("currentDir"), str):
+                    if os.path.exists(config.get("currentDir")):
+                        self._currentDir = config["currentDir"]
+            if config.get("online") is not None:
+                if isinstance(config.get("online"), bool):
+                    self._online = config["online"]
+            if config.get("closing_dialog") is not None:
+                if isinstance(config.get("closing_dialog"), bool):
+                    self._closing_dialog = config["closing_dialog"]
+        print(self._currentDir)
     
     def initGui(self):
         """
         Initialize the GUI.
         """
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        self.initMainWidget()
         self.setMenuBar()
 
         self.setWindowTitle("VMI Viewer")
@@ -79,13 +100,25 @@ class DataViewerBase(QMainWindow):
         self.close()
     
     def closeEvent(self, event):
-        confirmObject = QMessageBox.question(self, "Closing...",
-            "Are you sure to quit?", QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No)
-        if confirmObject == QMessageBox.Yes:
-            event.accept()
+        if self._closing_dialog:
+            confirmObject = QMessageBox.question(self, "Closing...",
+                "Are you sure to quit?", QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No)
+            if confirmObject == QMessageBox.Yes:
+                config = self.makeConfig()
+                with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
+                    json.dump(config, ff)
+                event.accept()
+            else:
+                event.ignore()
         else:
-            event.ignore()
+            config = self.makeConfig()
+            with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
+                json.dump(config, ff)
+    
+    def makeConfig(self):
+        return {"online":self._online, "closing_dialog":self._closing_dialog, 
+                "currentDir":self._currentDir}
     
     def showHelp(self):
         """
