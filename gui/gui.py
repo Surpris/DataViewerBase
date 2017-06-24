@@ -11,9 +11,11 @@ import os
 import json
 import datetime
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QDialog, QPushButton, QMessageBox, QWidget
+from PyQt4.QtCore import QObject, SIGNAL
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
+from PlotWindow import PlotWindow
 
 class DataViewerBase(QMainWindow):
     """
@@ -67,17 +69,22 @@ class DataViewerBase(QMainWindow):
         self.setWindowTitle("VMI Viewer")
         self.resize(1200, 600)
 
-        ### Add a plotting area.
+        ### Some buttons.
+        button_test = QPushButton()
+        button_test.setText("Test")
+        QObject.connect(button_test, SIGNAL("clicked()"), self.pushButton)
+
+        ### Plotting area.
         self.pw1 = pg.PlotWidget()
         self.pw2 = pg.PlotWidget()
 
-        self.grid.addWidget(self.pw1, 0, 0)
-        self.grid.addWidget(self.pw2, 0, 1)
+        ### Construct the layout.
+        self.grid.addWidget(button_test, 0, 0)
+        self.grid.addWidget(self.pw1, 1, 0, 2, 1)
+        self.grid.addWidget(self.pw2, 1, 1, 2, 1)
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
-        # self.setLayout(self.grid)
-        
-        
+
         print("<<" + inspect.currentframe().f_code.co_name)
     
     def initMainWidget(self):
@@ -172,6 +179,10 @@ class DataViewerBase(QMainWindow):
         print(">>" + inspect.currentframe().f_code.co_name)
         pass
         print("<<" + inspect.currentframe().f_code.co_name)
+
+    def pushButton(self):
+        window = PlotWindow()
+        window.show()
 
 def main():
     app = QtGui.QApplication([])
