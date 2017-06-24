@@ -66,6 +66,18 @@ class DataViewerBase(QMainWindow):
 
         self.setWindowTitle("VMI Viewer")
         self.resize(1200, 600)
+
+        ### Add a plotting area.
+        self.pw1 = pg.PlotWidget()
+        self.pw2 = pg.PlotWidget()
+
+        self.grid.addWidget(self.pw1, 0, 0)
+        self.grid.addWidget(self.pw2, 0, 1)
+        self.main_widget.setFocus()
+        self.setCentralWidget(self.main_widget)
+        # self.setLayout(self.grid)
+        
+        
         print("<<" + inspect.currentframe().f_code.co_name)
     
     def initMainWidget(self):
