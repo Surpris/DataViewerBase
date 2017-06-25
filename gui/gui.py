@@ -32,6 +32,8 @@ class DataViewerBase(QMainWindow):
         self.initInnerParameters()
         self.initGui()
         self.setupCheckingWorker()
+        if self._is_emulate:
+            self.emulateData()
     
     def initInnerParameters(self):
         """
@@ -40,6 +42,8 @@ class DataViewerBase(QMainWindow):
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
             self._windows = []
+            self._timer = QtCore.QTimer()
+            self._is_emulate = True
             self._currentDir = os.path.dirname(__file__)
             self._online = False
             self._closing_dialog = True
@@ -177,6 +181,21 @@ class DataViewerBase(QMainWindow):
         self._worker.do_something.connect(self.checkWindow)
         self._worker.finished.connect(self.finishCheckWindow)
         self._worker.start()
+    
+    def emulateData(self):
+        self._timer.setInterval(2000)
+        self._timer.timeout.connect(self.updateEmulateData)
+        self._timer.start()
+    
+    def updateEmulateData(self):
+        self.sig = np.random.normal(100, 10, (100, 100))
+        self.bg = np.random.normal(100, 10, (100, 100))
+        self.pw1.data = self.sig
+        self.pw1.updateImage()
+        self.pw2.data = self.bg
+        self.pw2.updateImage()
+        self.pw3.data = self.sig - self.bg
+        self.pw3.updateImage()
 
     def showHelp(self):
         """
@@ -200,8 +219,7 @@ class DataViewerBase(QMainWindow):
         window.show()
         window.raise_()
         window.activateWindow()
-        self._windows.append(window)
-        print(len(self._windows))
+        # self._windows.append(window)
     
     @pyqtSlot()
     def checkWindow(self):

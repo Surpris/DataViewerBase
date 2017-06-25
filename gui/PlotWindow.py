@@ -32,7 +32,7 @@ class PlotWindow(QDialog):
         self.name = name
         self.initInnerParameters()
         self.initGui()
-        
+
     def initInnerParameters(self):
         """
         Initialize the inner parameters.
@@ -40,7 +40,7 @@ class PlotWindow(QDialog):
         print(">>" + self.name + "()" + self.__class__.__name__ \
               + "." + inspect.currentframe().f_code.co_name + "()")
         self._timer = QtCore.QTimer()
-        self._is_demo = True
+        self._is_emulate = False
         self.data = None
         self._subplot_size = 100
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
@@ -128,7 +128,7 @@ class PlotWindow(QDialog):
         """
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
-            if self._is_demo:
+            if self._is_emulate:
                 self.data = np.random.normal(100, 10, (100, 100))
             self.iw.setImage(self.data)
             self.px.plot(self.data.mean(axis=1), np.arange(self.data.shape[0]), clear=True)
