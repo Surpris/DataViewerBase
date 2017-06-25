@@ -23,22 +23,22 @@ class PlotWindow(QDialog):
     """
     Class for some plots.
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, name = ""):
         """
         Initialization.
         """
         super().__init__(parent)
         print("Initialize this plot window...")
+        self.name = name
         self.initInnerParameters()
         self.initGui()
-    
-    def show(self):
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-        self.exec_()
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-
+        
     def initInnerParameters(self):
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        """
+        Initialize the inner parameters.
+        """
+        print(">>" + self.name + "()" + self.__class__.__name__ \
+              + "." + inspect.currentframe().f_code.co_name + "()")
         self._timer = QtCore.QTimer()
         self._is_demo = True
         self.data = None
@@ -46,6 +46,9 @@ class PlotWindow(QDialog):
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def initGui(self):
+        """
+        Initialize the GUI.
+        """
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         self.resize(600, 600)
         self.grid = QGridLayout(self)

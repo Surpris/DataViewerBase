@@ -11,11 +11,12 @@ import os
 import json
 import datetime
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QDialog, QPushButton, QMessageBox, QWidget
-from PyQt4.QtCore import QObject, SIGNAL
+from PyQt4.QtCore import QObject, SIGNAL, pyqtSlot
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
 from PlotWindow import PlotWindow
+from Worker import Worker
 
 class DataViewerBase(QMainWindow):
     """
@@ -30,6 +31,7 @@ class DataViewerBase(QMainWindow):
         print("Initialize this application...")
         self.initInnerParameters()
         self.initGui()
+        self.setupCheckingWorker()
     
     def initInnerParameters(self):
         """
@@ -37,6 +39,7 @@ class DataViewerBase(QMainWindow):
         """
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
+            self._windows = []
             self._currentDir = os.path.dirname(__file__)
             self._online = False
             self._closing_dialog = True
@@ -72,12 +75,13 @@ class DataViewerBase(QMainWindow):
         ### Some buttons.
         button_test = QPushButton()
         button_test.setText("Test")
-        QObject.connect(button_test, SIGNAL("clicked()"), self.pushButton)
+        button_test.clicked.connect(self.pushButton)
+        # QObject.connect(button_test, SIGNAL("clicked()"), self.pushButton)
 
         ### Plotting area.
-        self.pw1 = PlotWindow()
-        self.pw2 = PlotWindow()
-        self.pw3 = PlotWindow()
+        self.pw1 = PlotWindow(self)
+        self.pw2 = PlotWindow(self)
+        self.pw3 = PlotWindow(self)
 
         ### Construct the layout.
         self.grid.addWidget(button_test, 0, 0)
@@ -147,6 +151,7 @@ class DataViewerBase(QMainWindow):
                 config = self.makeConfig()
                 with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                     json.dump(config, ff)
+                self._worker.stop()
                 event.accept()
             else:
                 event.ignore()
@@ -154,6 +159,7 @@ class DataViewerBase(QMainWindow):
             config = self.makeConfig()
             with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                 json.dump(config, ff)
+            self._worker.stop()
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def makeConfig(self):
@@ -166,6 +172,12 @@ class DataViewerBase(QMainWindow):
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         return config
     
+    def setupCheckingWorker(self):
+        self._worker = Worker()
+        self._worker.do_something.connect(self.checkWindow)
+        self._worker.finished.connect(self.finishCheckWindow)
+        self._worker.start()
+
     def showHelp(self):
         """
         Show a pop-up dialog showing how to use this application.
@@ -182,9 +194,27 @@ class DataViewerBase(QMainWindow):
         pass
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
+    @pyqtSlot()
     def pushButton(self):
-        window = PlotWindow()
+        window = PlotWindow(self, "win{0:02d}".format(len(self._windows)+1))
         window.show()
+        window.raise_()
+        window.activateWindow()
+        self._windows.append(window)
+        print(len(self._windows))
+    
+    @pyqtSlot()
+    def checkWindow(self):
+        """
+        Check whether windows are active.
+        """
+        print(len(self._windows))
+        for window in self._windows:
+            pass
+    
+    @pyqtSlot()
+    def finishCheckWindow(self):
+        self._worker.wait()
 
 def main():
     app = QtGui.QApplication([])
