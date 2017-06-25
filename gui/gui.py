@@ -35,7 +35,7 @@ class DataViewerBase(QMainWindow):
         """
         Initialize the inner parameters.
         """
-        print(">>" + inspect.currentframe().f_code.co_name)
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
             self._currentDir = os.path.dirname(__file__)
             self._online = False
@@ -55,13 +55,13 @@ class DataViewerBase(QMainWindow):
                         self._closing_dialog = config["closing_dialog"]
         except Exception as ex:
             print(ex)
-        print("<<" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def initGui(self):
         """
         Initialize the GUI.
         """
-        print(">>" + inspect.currentframe().f_code.co_name)
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.initMainWidget()
         self.setMenuBar()
@@ -85,23 +85,23 @@ class DataViewerBase(QMainWindow):
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
 
-        print("<<" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def initMainWidget(self):
         """
         Initialize the main widget and the grid.
         """
-        print(">>" + inspect.currentframe().f_code.co_name)
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         self.main_widget = QWidget(self)
         self.grid = QGridLayout(self.main_widget)
         self.grid.setSpacing(10)
-        print("<<" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
     def setMenuBar(self):
         """
         Set the contents of the menu bar
         """
-        print(">>" + inspect.currentframe().f_code.co_name)
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         ## File
         file_menu = QMenu('&File', self)
 
@@ -119,15 +119,15 @@ class DataViewerBase(QMainWindow):
         help_menu.addAction('About...', self.showAbout)
         self.menuBar().addSeparator()
         self.menuBar().addMenu(help_menu)
-        print("<<" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def openFile(self):
         """
         Show a file dialog and select a file
         """
-        print(">>" + inspect.currentframe().f_code.co_name)
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         pass
-        print("<<" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
     def quitApp(self):
         """
@@ -136,7 +136,7 @@ class DataViewerBase(QMainWindow):
         self.close()
     
     def closeEvent(self, event):
-        print(">>" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         if self._closing_dialog:
             confirmObject = QMessageBox.question(self, "Closing...",
                 "Are you sure to quit?", QMessageBox.Yes | QMessageBox.No,
@@ -152,33 +152,33 @@ class DataViewerBase(QMainWindow):
             config = self.makeConfig()
             with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                 json.dump(config, ff)
-        print("<<" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def makeConfig(self):
         """
         Make a config dict object to save the latest configration in.
         """
-        print(">>" + inspect.currentframe().f_code.co_name)
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         config = {"online":self._online, "closing_dialog":self._closing_dialog, 
                 "currentDir":self._currentDir}
-        print("<<" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         return config
     
     def showHelp(self):
         """
         Show a pop-up dialog showing how to use this application.
         """
-        print(">>" + inspect.currentframe().f_code.co_name)
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         pass
-        print("<<" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def showAbout(self):
         """
         Show a pop-up dialog describing this application.
         """
-        print(">>" + inspect.currentframe().f_code.co_name)
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         pass
-        print("<<" + inspect.currentframe().f_code.co_name)
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
     def pushButton(self):
         window = PlotWindow()
