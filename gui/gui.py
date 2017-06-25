@@ -11,7 +11,7 @@ import os
 import json
 import datetime
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QDialog, QPushButton, QMessageBox, QWidget
-from PyQt4.QtCore import QObject, SIGNAL, pyqtSlot
+from PyQt4.QtCore import pyqtSlot
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
@@ -23,6 +23,7 @@ class DataViewerBase(QMainWindow):
     Base GUI class for viewing data / images.
     This class was made in the purpose of viewing VMI images.
     """
+
     def __init__(self):
         """
         Initialization.
@@ -32,7 +33,7 @@ class DataViewerBase(QMainWindow):
         self.initInnerParameters()
         self.initGui()
         self.setupCheckingWorker()
-        if self._is_emulate:
+        if self._emulate:
             self.emulateData()
     
     def initInnerParameters(self):
@@ -42,8 +43,11 @@ class DataViewerBase(QMainWindow):
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
             self._windows = []
+            self._worker = None
+            self.sig = None
+            self.bg = None
             self._timer = QtCore.QTimer()
-            self._is_emulate = True
+            self._emulate = True
             self._currentDir = os.path.dirname(__file__)
             self._online = False
             self._closing_dialog = True
@@ -60,6 +64,9 @@ class DataViewerBase(QMainWindow):
                 if config.get("closing_dialog") is not None:
                     if isinstance(config.get("closing_dialog"), bool):
                         self._closing_dialog = config["closing_dialog"]
+                if config.get("emulate") is not None:
+                    if isinstance(config.get("emulate"), bool):
+                        self._emulate = config["emulate"]
         except Exception as ex:
             print(ex)
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
@@ -74,18 +81,20 @@ class DataViewerBase(QMainWindow):
         self.setMenuBar()
 
         self.setWindowTitle("VMI Viewer")
-        self.resize(1200, 600)
+        self.resize(1280, 600)
 
         ### Some buttons.
         button_test = QPushButton()
         button_test.setText("Test")
         button_test.clicked.connect(self.pushButton)
-        # QObject.connect(button_test, SIGNAL("clicked()"), self.pushButton)
 
         ### Plotting area.
         self.pw1 = PlotWindow(self)
+        self.pw1.bp.setEnabled(False)
         self.pw2 = PlotWindow(self)
+        self.pw2.bp.setEnabled(False)
         self.pw3 = PlotWindow(self)
+        self.pw3.bp.setEnabled(False)
 
         ### Construct the layout.
         self.grid.addWidget(button_test, 0, 0)
@@ -155,7 +164,8 @@ class DataViewerBase(QMainWindow):
                 config = self.makeConfig()
                 with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                     json.dump(config, ff)
-                self._worker.stop()
+                if self._worker is not None:
+                    self._worker.stop()
                 event.accept()
             else:
                 event.ignore()
@@ -163,7 +173,8 @@ class DataViewerBase(QMainWindow):
             config = self.makeConfig()
             with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                 json.dump(config, ff)
-            self._worker.stop()
+            if self._worker is not None:
+                self._worker.stop()
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def makeConfig(self):
@@ -175,27 +186,6 @@ class DataViewerBase(QMainWindow):
                 "currentDir":self._currentDir}
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         return config
-    
-    def setupCheckingWorker(self):
-        self._worker = Worker()
-        self._worker.do_something.connect(self.checkWindow)
-        self._worker.finished.connect(self.finishCheckWindow)
-        self._worker.start()
-    
-    def emulateData(self):
-        self._timer.setInterval(2000)
-        self._timer.timeout.connect(self.updateEmulateData)
-        self._timer.start()
-    
-    def updateEmulateData(self):
-        self.sig = np.random.normal(100, 10, (100, 100))
-        self.bg = np.random.normal(100, 10, (100, 100))
-        self.pw1.data = self.sig
-        self.pw1.updateImage()
-        self.pw2.data = self.bg
-        self.pw2.updateImage()
-        self.pw3.data = self.sig - self.bg
-        self.pw3.updateImage()
 
     def showHelp(self):
         """
@@ -213,13 +203,23 @@ class DataViewerBase(QMainWindow):
         pass
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
+######################## Widgets' functions ########################
+
     @pyqtSlot()
     def pushButton(self):
         window = PlotWindow(self, "win{0:02d}".format(len(self._windows)+1))
         window.show()
         window.raise_()
         window.activateWindow()
-        # self._windows.append(window)
+        self._windows.append(window)
+
+######################## Checking worker ########################
+
+    def setupCheckingWorker(self):
+        self._worker = Worker()
+        self._worker.do_something.connect(self.checkWindow)
+        self._worker.finished.connect(self.finishCheckWindow)
+        self._worker.start()
     
     @pyqtSlot()
     def checkWindow(self):
@@ -227,12 +227,39 @@ class DataViewerBase(QMainWindow):
         Check whether windows are active.
         """
         print(len(self._windows))
-        for window in self._windows:
-            pass
+        N = len(self._windows)*1
+        for ii in range(N):
+            if self._windows[N-ii-1].is_closed:
+                del self._windows[N-ii-1]
     
     @pyqtSlot()
     def finishCheckWindow(self):
         self._worker.wait()
+
+ ######################## Emulation functions ########################
+    
+    def emulateData(self):
+        """
+        Emulate data.
+        TODO: modify so that this function works on a worker.
+        """
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        self._timer.setInterval(2000)
+        self._timer.timeout.connect(self.updateEmulateData)
+        self._timer.start()
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+    
+    def updateEmulateData(self):
+        self.sig = np.random.normal(100, 10, (100, 100))
+        self.bg = np.random.normal(100, 10, (100, 100))
+        self.pw1.data = self.sig
+        self.pw1.updateImage()
+        self.pw2.data = self.bg
+        self.pw2.updateImage()
+        self.pw3.data = self.sig - self.bg
+        self.pw3.updateImage()
+        for window in self._windows:
+            window.data = self.sig
 
 def main():
     app = QtGui.QApplication([])

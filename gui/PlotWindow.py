@@ -13,7 +13,7 @@ import time
 import datetime
 import numpy as np
 from PyQt4.QtGui import QMainWindow, QGridLayout, QDialog, QPushButton, QWidget, QMenu
-from PyQt4.QtCore import QObject, SIGNAL
+from PyQt4.QtCore import pyqtSlot
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
@@ -28,6 +28,7 @@ class PlotWindow(QDialog):
         Initialization.
         """
         super().__init__(parent)
+        self.setParent(parent)
         print("Initialize this plot window...")
         self.name = name
         self.initInnerParameters()
@@ -39,6 +40,7 @@ class PlotWindow(QDialog):
         """
         print(">>" + self.name + "()" + self.__class__.__name__ \
               + "." + inspect.currentframe().f_code.co_name + "()")
+        self.is_closed = False
         self._timer = QtCore.QTimer()
         self._is_emulate = False
         self.data = None
@@ -57,7 +59,7 @@ class PlotWindow(QDialog):
         ## Some buttons.
         self.bp = QPushButton()
         self.bp.setText("Start plotting")
-        QObject.connect(self.bp, SIGNAL("clicked()"), self.pushButton)
+        self.bp.clicked.connect(self.pushButton)
         self.grid.addWidget(self.bp, 0, 0, 1, 1)
 
         ## Plotting area.
@@ -103,6 +105,7 @@ class PlotWindow(QDialog):
 
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
+    @pyqtSlot()
     def pushButton(self):
         """
         Button function.
@@ -128,23 +131,26 @@ class PlotWindow(QDialog):
         """
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
-            if self._is_emulate:
-                self.data = np.random.normal(100, 10, (100, 100))
-            self.iw.setImage(self.data)
-            self.px.plot(self.data.mean(axis=1), np.arange(self.data.shape[0]), clear=True)
-            self.py.plot(np.arange(self.data.shape[1]), self.data.mean(axis=0), clear=True)
-            hist, xbins = np.histogram(self.data.flatten())
-            dxbins = xbins[1] - xbins[0]
-            self.ph.plot(xbins + dxbins/2.0, hist, clear=True,
-                         stepMode=True, fillLevel=0,brush=(0,0,255,150))
+            if self.data is not None:
+                if self._is_emulate:
+                    self.data = np.random.normal(100, 10, (100, 100))
+                self.iw.setImage(self.data)
+                self.px.plot(self.data.mean(axis=1), np.arange(self.data.shape[0]), clear=True)
+                self.py.plot(np.arange(self.data.shape[1]), self.data.mean(axis=0), clear=True)
+                hist, xbins = np.histogram(self.data.flatten())
+                dxbins = xbins[1] - xbins[0]
+                self.ph.plot(xbins + dxbins/2.0, hist, clear=True,
+                            stepMode=True, fillLevel=0,brush=(0,0,255,150))
         except Exception as ex:
             print(ex)
         
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
     def closeEvent(self, event):
+        self.is_closed = True
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         if self._timer.isActive():
             print("Stop the active timer.")
             self._timer.stop()
+        self.data = None
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
