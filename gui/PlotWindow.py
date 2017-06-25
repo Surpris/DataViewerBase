@@ -39,13 +39,15 @@ class PlotWindow(QDialog):
 
     def initInnerParameters(self):
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-        self._is_plot_started = False
+        self._timer = QtCore.QTimer()
+        self._is_demo = True
         self.data = None
+        self._subplot_size = 100
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def initGui(self):
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-        self.resize(800, 800)
+        self.resize(600, 600)
         self.grid = QGridLayout(self)
         self.grid.setSpacing(10)
 
@@ -69,11 +71,11 @@ class PlotWindow(QDialog):
 
         # Construct the graphic layout.
         self.glw = pg.GraphicsLayoutWidget()
-        self.glw.resize(800, 800)
+        self.glw.resize(600, 600)
 
         # Plot area for x-projection.
         self.px = self.glw.addPlot()
-        self.px.setMaximumWidth(250)
+        self.px.setMaximumWidth(self._subplot_size)
 
         # Plot area for the image.
         p1 = self.glw.addPlot()
@@ -83,18 +85,18 @@ class PlotWindow(QDialog):
         # Contrast/color control
         hist = pg.HistogramLUTItem()
         hist.setImageItem(self.iw)
-        hist.setMaximumWidth(100)
+        hist.setMaximumWidth(self._subplot_size)
         self.glw.addItem(hist)
         self.glw.nextRow()
 
         # Plot area for histogram.
         self.ph = self.glw.addPlot()
-        self.ph.setMaximumHeight(250)
-        self.ph.setMaximumWidth(250)
+        self.ph.setMaximumHeight(self._subplot_size)
+        self.ph.setMaximumWidth(self._subplot_size)
         
         # Plot area for y-projection.
         self.py = self.glw.addPlot()
-        self.py.setMaximumHeight(250)
+        self.py.setMaximumHeight(self._subplot_size)
 
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
@@ -104,17 +106,13 @@ class PlotWindow(QDialog):
         """
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
-            if not self._is_plot_started:
-                
-                self.timer = QtCore.QTimer()
-                self.timer.setInterval(1000)
-                self.timer.timeout.connect(self.updateImage)
-                self.timer.start()
-                self._is_plot_started = True
+            if not self._timer.isActive():
+                self._timer.setInterval(1000)
+                self._timer.timeout.connect(self.updateImage)
+                self._timer.start()
                 self.bp.setText("Stop plotting")
             else:
-                self.timer.stop()
-                self._is_plot_started = False
+                self._timer.stop()
                 self.bp.setText("Start plotting")
         except Exception as ex:
             print(ex)
@@ -127,15 +125,23 @@ class PlotWindow(QDialog):
         """
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
-            data = np.random.normal(100, 10, (100, 100))
-            self.iw.setImage(data)
-            self.px.plot(data.mean(axis=1), np.arange(data.shape[0]), clear=True)
-            self.py.plot(np.arange(data.shape[1]), data.mean(axis=0), clear=True)
-            hist, xbins = np.histogram(data.flatten())
+            if self._is_demo:
+                self.data = np.random.normal(100, 10, (100, 100))
+            self.iw.setImage(self.data)
+            self.px.plot(self.data.mean(axis=1), np.arange(self.data.shape[0]), clear=True)
+            self.py.plot(np.arange(self.data.shape[1]), self.data.mean(axis=0), clear=True)
+            hist, xbins = np.histogram(self.data.flatten())
             dxbins = xbins[1] - xbins[0]
             self.ph.plot(xbins + dxbins/2.0, hist, clear=True,
                          stepMode=True, fillLevel=0,brush=(0,0,255,150))
         except Exception as ex:
             print(ex)
         
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+
+    def closeEvent(self, event):
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        if self._timer.isActive():
+            print("Stop the active timer.")
+            self._timer.stop()
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")

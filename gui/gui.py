@@ -75,13 +75,15 @@ class DataViewerBase(QMainWindow):
         QObject.connect(button_test, SIGNAL("clicked()"), self.pushButton)
 
         ### Plotting area.
-        self.pw1 = pg.PlotWidget()
-        self.pw2 = pg.PlotWidget()
+        self.pw1 = PlotWindow()
+        self.pw2 = PlotWindow()
+        self.pw3 = PlotWindow()
 
         ### Construct the layout.
         self.grid.addWidget(button_test, 0, 0)
         self.grid.addWidget(self.pw1, 1, 0, 2, 1)
         self.grid.addWidget(self.pw2, 1, 1, 2, 1)
+        self.grid.addWidget(self.pw3, 1, 2, 2, 1)
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
 
@@ -136,7 +138,7 @@ class DataViewerBase(QMainWindow):
         self.close()
     
     def closeEvent(self, event):
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         if self._closing_dialog:
             confirmObject = QMessageBox.question(self, "Closing...",
                 "Are you sure to quit?", QMessageBox.Yes | QMessageBox.No,
