@@ -5,7 +5,14 @@ Created on Thu Jun 25 00:42:08 2017
 @author: Surpris
 """
 
-from PyQt4.QtGui import QMainWindow, QGridLayout, QDialog, QPushButton, QWidget
+import sys
+import inspect
+import os
+import json
+import datetime
+import numpy as np
+from PyQt4.QtGui import QMainWindow, QGridLayout, QDialog, QPushButton, QWidget, QMenu
+from PyQt4.QtCore import QObject, SIGNAL
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
@@ -23,24 +30,41 @@ class PlotWindow(QDialog):
         self.resize(800, 800)
         grid = QGridLayout(self)
         grid.setSpacing(10)
+
+        ### Some buttons.
+        button_test = QPushButton()
+        button_test.setText("Test")
+        QObject.connect(button_test, SIGNAL("clicked()"), self.pushButton)
+        grid.addWidget(button_test, 0, 0, 1, 1)
+        
         self.glw = pg.GraphicsLayoutWidget()
         self.glw.resize(800, 800)
         
         # self.grid = QGridLayout(self.w)
         # self.grid.setSpacing(10)
 
-        self.pw1 = pg.PlotWidget()
-        self.pw2 = pg.PlotWidget()
+        self.pw2 = pg.PlotItem()
         self.iw = pg.ImageItem()
 
         self.p1 = self.glw.addPlot()
-        self.p1.addItem(self.iw)
-        grid.addWidget(self.glw, 0, 0)
+        self.p1.setMaximumWidth(200)
+        p1 = self.glw.addPlot()
+        p1.addItem(self.iw)
+        self.glw.nextRow()
+        self.p2 = self.glw.addPlot(col=1)
+        self.p2.setMaximumHeight(200)
+        try:
+            _x = np.arange(0, 100) * 0.1*np.pi
+            self.p2.plot(_x, np.sin(_x))
+        except Exception as ex:
+            print(ex)
+        self.iw.setImage(np.random.randint(0, 100, (100, 100)))
+        grid.addWidget(self.glw, 1, 0)
         
-        # self.grid.addWidget(self.pw1, 0, 0, 3, 1)
-        # self.grid.addWidget(self.pw2, 3, 1, 1, 3)
-        # self.grid.addWidget(self.iw , 0, 1, 3, 3)
         self.data = None
     
     def show(self):
         self.exec_()
+    
+    def pushButton(self):
+        pass
