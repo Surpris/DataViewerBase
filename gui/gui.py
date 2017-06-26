@@ -33,8 +33,6 @@ class DataViewerBase(QMainWindow):
         self.initInnerParameters()
         self.initGui()
         self.setupCheckingWorker()
-        if self._emulate:
-            self.emulateData()
     
     def initInnerParameters(self):
         """
@@ -51,7 +49,7 @@ class DataViewerBase(QMainWindow):
             
             self._is_run = False
             self._currentDir = os.path.dirname(__file__)
-            self._emulate = False
+            self._emulate = True
             self._online = False
             self._closing_dialog = True
             if os.path.exists(os.path.join(os.path.dirname(__file__), "config.json")):
