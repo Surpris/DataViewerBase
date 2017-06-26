@@ -23,7 +23,7 @@ class PlotWindow(QDialog):
     """
     Class for some plots.
     """
-    def __init__(self, parent=None, name = ""):
+    def __init__(self, parent=None, name = "", **kwargs):
         """
         Initialization.
         """
@@ -31,6 +31,7 @@ class PlotWindow(QDialog):
         self.setParent(parent)
         print("Initialize this plot window...")
         self.name = name
+        self.kwargs = kwargs
         self.initInnerParameters()
         self.initGui()
 
@@ -79,8 +80,10 @@ class PlotWindow(QDialog):
         self.glw.resize(600, 600)
 
         # Plot area for x-projection.
-        self.px = self.glw.addPlot()
-        self.px.setMaximumWidth(self._subplot_size)
+        self._is_px = self.kwargs.get("px", True)
+        if self._is_px:
+            self.px = self.glw.addPlot()
+            self.px.setMaximumWidth(self._subplot_size)
 
         # Plot area for the image.
         p1 = self.glw.addPlot()
@@ -92,16 +95,21 @@ class PlotWindow(QDialog):
         hist.setImageItem(self.iw)
         hist.setMaximumWidth(self._subplot_size)
         self.glw.addItem(hist)
-        self.glw.nextRow()
 
         # Plot area for histogram.
-        self.ph = self.glw.addPlot()
-        self.ph.setMaximumHeight(self._subplot_size)
-        self.ph.setMaximumWidth(self._subplot_size)
+        self._is_ph = self.kwargs.get("ph", True)
+        self._is_py = self.kwargs.get("py", True)
+        if self._is_ph or self._is_py:
+            self.glw.nextRow()
+        if self._is_ph:
+            self.ph = self.glw.addPlot()
+            self.ph.setMaximumHeight(self._subplot_size)
+            self.ph.setMaximumWidth(self._subplot_size)
         
         # Plot area for y-projection.
-        self.py = self.glw.addPlot()
-        self.py.setMaximumHeight(self._subplot_size)
+        if self._is_py:
+            self.py = self.glw.addPlot()
+            self.py.setMaximumHeight(self._subplot_size)
 
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
@@ -135,12 +143,15 @@ class PlotWindow(QDialog):
                 if self._is_emulate:
                     self.data = np.random.normal(100, 10, (100, 100))
                 self.iw.setImage(self.data)
-                self.px.plot(self.data.mean(axis=1), np.arange(self.data.shape[0]), clear=True)
-                self.py.plot(np.arange(self.data.shape[1]), self.data.mean(axis=0), clear=True)
-                hist, xbins = np.histogram(self.data.flatten())
-                dxbins = xbins[1] - xbins[0]
-                self.ph.plot(xbins + dxbins/2.0, hist, clear=True,
-                            stepMode=True, fillLevel=0,brush=(0,0,255,150))
+                if self._is_px:
+                    self.px.plot(self.data.mean(axis=1), np.arange(self.data.shape[0]), clear=True)
+                if self._is_py:
+                    self.py.plot(np.arange(self.data.shape[1]), self.data.mean(axis=0), clear=True)
+                if self._is_ph:
+                    hist, xbins = np.histogram(self.data.flatten())
+                    dxbins = xbins[1] - xbins[0]
+                    self.ph.plot(xbins + dxbins/2.0, hist, clear=True,
+                                stepMode=True, fillLevel=0,brush=(0,0,255,150))
         except Exception as ex:
             print(ex)
         

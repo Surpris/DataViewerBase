@@ -94,11 +94,11 @@ class DataViewerBase(QMainWindow):
         self.brun.clicked.connect(self.runMainProcess)
 
         ### Plotting area.
-        self.pw1 = PlotWindow(self)
+        self.pw1 = PlotWindow(self, px=False, py=False, ph=False)
         self.pw1.bp.setEnabled(False)
-        self.pw2 = PlotWindow(self)
+        self.pw2 = PlotWindow(self, px=False, py=False, ph=False)
         self.pw2.bp.setEnabled(False)
-        self.pw3 = PlotWindow(self)
+        self.pw3 = PlotWindow(self, px=False, py=False, ph=False)
         self.pw3.bp.setEnabled(False)
 
         ### Construct the layout.
@@ -218,6 +218,7 @@ class DataViewerBase(QMainWindow):
 
     def setupCheckingWorker(self):
         self._worker_check = Worker(name="checkWindowWorker")
+        self._worker_check.sleep_interval = 1900
         self._worker_check.do_something.connect(self.checkWindow)
         self._worker_check.finished.connect(self.finishWorker)
         self._worker_check.start()
