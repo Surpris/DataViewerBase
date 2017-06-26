@@ -43,12 +43,15 @@ class DataViewerBase(QMainWindow):
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
             self._windows = []
-            self._worker = None
+            self._worker_check = None
+            self._worker_run = None
             self.sig = None
             self.bg = None
             self._timer = QtCore.QTimer()
-            self._emulate = True
+            
+            self._is_run = False
             self._currentDir = os.path.dirname(__file__)
+            self._emulate = False
             self._online = False
             self._closing_dialog = True
             if os.path.exists(os.path.join(os.path.dirname(__file__), "config.json")):
@@ -84,9 +87,13 @@ class DataViewerBase(QMainWindow):
         self.resize(1280, 600)
 
         ### Some buttons.
-        button_test = QPushButton()
-        button_test.setText("Test")
-        button_test.clicked.connect(self.pushButton)
+        button_test = QPushButton(self)
+        button_test.setText("Window")
+        button_test.clicked.connect(self.showWindow)
+
+        self.brun = QPushButton(self)
+        self.brun.setText("Run")
+        self.brun.clicked.connect(self.runMainProcess)
 
         ### Plotting area.
         self.pw1 = PlotWindow(self)
@@ -98,6 +105,7 @@ class DataViewerBase(QMainWindow):
 
         ### Construct the layout.
         self.grid.addWidget(button_test, 0, 0)
+        self.grid.addWidget(self.brun, 0, 1)
         self.grid.addWidget(self.pw1, 1, 0, 2, 1)
         self.grid.addWidget(self.pw2, 1, 1, 2, 1)
         self.grid.addWidget(self.pw3, 1, 2, 2, 1)
@@ -139,7 +147,9 @@ class DataViewerBase(QMainWindow):
         self.menuBar().addSeparator()
         self.menuBar().addMenu(help_menu)
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-    
+
+######################## Menu bar ########################
+
     def openFile(self):
         """
         Show a file dialog and select a file
@@ -154,39 +164,7 @@ class DataViewerBase(QMainWindow):
         """
         self.close()
     
-    def closeEvent(self, event):
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-        if self._closing_dialog:
-            confirmObject = QMessageBox.question(self, "Closing...",
-                "Are you sure to quit?", QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No)
-            if confirmObject == QMessageBox.Yes:
-                config = self.makeConfig()
-                with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
-                    json.dump(config, ff)
-                if self._worker is not None:
-                    self._worker.stop()
-                event.accept()
-            else:
-                event.ignore()
-        else:
-            config = self.makeConfig()
-            with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
-                json.dump(config, ff)
-            if self._worker is not None:
-                self._worker.stop()
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
-    def makeConfig(self):
-        """
-        Make a config dict object to save the latest configration in.
-        """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-        config = {"online":self._online, "closing_dialog":self._closing_dialog, 
-                "currentDir":self._currentDir}
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-        return config
-
     def showHelp(self):
         """
         Show a pop-up dialog showing how to use this application.
@@ -206,20 +184,45 @@ class DataViewerBase(QMainWindow):
 ######################## Widgets' functions ########################
 
     @pyqtSlot()
-    def pushButton(self):
+    def showWindow(self):
         window = PlotWindow(self, "win{0:02d}".format(len(self._windows)+1))
         window.show()
         window.raise_()
         window.activateWindow()
         self._windows.append(window)
+    
+    @pyqtSlot()
+    def runMainProcess(self):
+        if not self._is_run:
+            self._worker_run = Worker(name="RunWorker")
+            self._worker_run.sleep_interval = 1900
+            self._worker_run.do_something.connect(self.mainProcess)
+            self._worker_run.finished.connect(self.finishWorker)
+            self._worker_run.start()
+            self.brun.setText("Stop")
+            self._is_run = True
+        else:
+            self._worker_run.stop()
+            self._worker_run.wait()
+            self.brun.setText("Start")
+            self._is_run = False
+    
+    @pyqtSlot()
+    def mainProcess(self):
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        if self._emulate:
+            self.updateEmulateData()
+        else:
+            pass
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
 ######################## Checking worker ########################
 
     def setupCheckingWorker(self):
-        self._worker = Worker()
-        self._worker.do_something.connect(self.checkWindow)
-        self._worker.finished.connect(self.finishCheckWindow)
-        self._worker.start()
+        self._worker_check = Worker(name="checkWindowWorker")
+        self._worker_check.do_something.connect(self.checkWindow)
+        self._worker_check.finished.connect(self.finishWorker)
+        self._worker_check.start()
     
     @pyqtSlot()
     def checkWindow(self):
@@ -233,8 +236,52 @@ class DataViewerBase(QMainWindow):
                 del self._windows[N-ii-1]
     
     @pyqtSlot()
-    def finishCheckWindow(self):
-        self._worker.wait()
+    def finishWorker(self):
+        pass
+
+######################## Closing processes ########################
+
+    def closeEvent(self, event):
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        if self._closing_dialog:
+            confirmObject = QMessageBox.question(self, "Closing...",
+                "Are you sure to quit?", QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No)
+            if confirmObject == QMessageBox.Yes:
+                config = self.makeConfig()
+                with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
+                    json.dump(config, ff)
+                if self._worker_run is not None:
+                    self._worker_run.stop()
+                    self._worker_run.wait()
+                if self._worker_check is not None:
+                    self._worker_check.stop()
+                    self._worker_check.wait()
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            config = self.makeConfig()
+            with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
+                json.dump(config, ff)
+            if self._worker_run is not None:
+                self._worker_run.stop()
+                self._worker_run.wait()
+            if self._worker_check is not None:
+                self._worker_check.stop()
+                self._worker_check.wait()
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+    
+    def makeConfig(self):
+        """
+        Make a config dict object to save the latest configration in.
+        """
+        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        config = {"online":self._online, "closing_dialog":self._closing_dialog, 
+                "currentDir":self._currentDir, "emulate":self._emulate}
+        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        return config
+
 
  ######################## Emulation functions ########################
     
