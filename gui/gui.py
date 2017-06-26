@@ -10,7 +10,8 @@ import inspect
 import os
 import json
 import datetime
-from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QDialog, QPushButton, QMessageBox, QWidget
+from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget
+from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
 from PyQt4.QtCore import pyqtSlot
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
@@ -32,7 +33,7 @@ class DataViewerBase(QMainWindow):
         print("Initialize this application...")
         self.initInnerParameters()
         self.initGui()
-        self.setupCheckingWorker()
+        self.runCheckWindowWorker()
     
     def initInnerParameters(self):
         """
@@ -84,14 +85,40 @@ class DataViewerBase(QMainWindow):
         self.setWindowTitle("VMI Viewer")
         self.resize(1280, 600)
 
-        ### Some buttons.
-        button_test = QPushButton(self)
-        button_test.setText("Window")
-        button_test.clicked.connect(self.showWindow)
+        ### RunInfo.
+        group_runinfo = QGroupBox(self)
+        group_runinfo.setTitle("RunInfo")
+        group_runinfo.resize(400, 100)
+        grid_runinfo = QGridLayout(group_runinfo)
 
-        self.brun = QPushButton(self)
-        self.brun.setText("Run")
+        ### Function buttons.
+        group_func = QGroupBox(self)
+        group_func.setTitle("Functions")
+        group_func.resize(400, 100)
+        box_func = QHBoxLayout(group_func)
+        box_func.setSpacing(10)
+
+        # Start/Stop main process button.
+        self.brun = QPushButton(group_func)
+        self.brun.setText("Start")
+        font = self.brun.font()
+        font.setPointSize(16)
+        self.brun.setFont(font)
+        self.brun.resize(400, 50)
         self.brun.clicked.connect(self.runMainProcess)
+
+        # New window button. 
+        bwindow = QPushButton(group_func)
+        bwindow.setText("Window")
+        font = bwindow.font()
+        font.setPointSize(16)
+        bwindow.setFont(font)
+        bwindow.resize(400, 50)
+        bwindow.clicked.connect(self.showWindow)
+        
+        # Construct the layout of RunInfo groupbox.
+        box_func.addWidget(self.brun)
+        box_func.addWidget(bwindow)
 
         ### Plotting area.
         self.pw1 = PlotWindow(self, px=False, py=False, ph=False)
@@ -102,8 +129,8 @@ class DataViewerBase(QMainWindow):
         self.pw3.bp.setEnabled(False)
 
         ### Construct the layout.
-        self.grid.addWidget(button_test, 0, 0)
-        self.grid.addWidget(self.brun, 0, 1)
+        self.grid.addWidget(group_runinfo, 0, 0)
+        self.grid.addWidget(group_func, 0, 1)
         self.grid.addWidget(self.pw1, 1, 0, 2, 1)
         self.grid.addWidget(self.pw2, 1, 1, 2, 1)
         self.grid.addWidget(self.pw3, 1, 2, 2, 1)
@@ -216,7 +243,7 @@ class DataViewerBase(QMainWindow):
 
 ######################## Checking worker ########################
 
-    def setupCheckingWorker(self):
+    def runCheckWindowWorker(self):
         self._worker_check = Worker(name="checkWindowWorker")
         self._worker_check.sleep_interval = 1900
         self._worker_check.do_something.connect(self.checkWindow)
