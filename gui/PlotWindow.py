@@ -12,7 +12,7 @@ import json
 import time
 import datetime
 import numpy as np
-from PyQt4.QtGui import QMainWindow, QGridLayout, QDialog, QPushButton, QWidget, QMenu
+from PyQt4.QtGui import QGridLayout, QDialog, QPushButton
 from PyQt4.QtCore import pyqtSlot
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtCore
@@ -39,7 +39,7 @@ class PlotWindow(QDialog):
         """
         Initialize the inner parameters.
         """
-        print(">>" + self.name + "()" + self.__class__.__name__ \
+        print(">>" + self.__class__.__name__ \
               + "." + inspect.currentframe().f_code.co_name + "()")
         self.is_closed = False
         self._timer = QtCore.QTimer()
@@ -137,7 +137,7 @@ class PlotWindow(QDialog):
         """
         Update the image and the other plots.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        # print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
             if self.data is not None:
                 if self._is_emulate:
@@ -155,7 +155,7 @@ class PlotWindow(QDialog):
         except Exception as ex:
             print(ex)
         
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        # print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
     def closeEvent(self, event):
         self.is_closed = True

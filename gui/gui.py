@@ -12,7 +12,7 @@ import json
 import datetime
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget
 from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
-from PyQt4.QtCore import pyqtSlot
+from PyQt4.QtCore import pyqtSlot, QThread
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
@@ -40,37 +40,36 @@ class DataViewerBase(QMainWindow):
         Initialize the inner parameters.
         """
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-        try:
-            self._windows = []
-            self._worker_check = None
-            self._worker_run = None
-            self.sig = None
-            self.bg = None
-            self._timer = QtCore.QTimer()
-            
-            self._is_run = False
-            self._currentDir = os.path.dirname(__file__)
-            self._emulate = True
-            self._online = False
-            self._closing_dialog = True
-            if os.path.exists(os.path.join(os.path.dirname(__file__), "config.json")):
-                with open(os.path.join(os.path.dirname(__file__), "config.json"),'r') as ff:
-                    config = json.load(ff)
-                if config.get("currentDir") is not None:
-                    if isinstance(config.get("currentDir"), str):
-                        if os.path.exists(config.get("currentDir")):
-                            self._currentDir = config["currentDir"]
-                if config.get("online") is not None:
-                    if isinstance(config.get("online"), bool):
-                        self._online = config["online"]
-                if config.get("closing_dialog") is not None:
-                    if isinstance(config.get("closing_dialog"), bool):
-                        self._closing_dialog = config["closing_dialog"]
-                if config.get("emulate") is not None:
-                    if isinstance(config.get("emulate"), bool):
-                        self._emulate = config["emulate"]
-        except Exception as ex:
-            print(ex)
+        self._windows = []
+        self._thread_check = QThread()
+        self._thread_run = QThread()
+        self._worker_check = None
+        self._worker_run = None
+        self.sig = None
+        self.bg = None
+        self._timer = QtCore.QTimer()
+        
+        self._is_run = False
+        self._currentDir = os.path.dirname(__file__)
+        self._emulate = True
+        self._online = False
+        self._closing_dialog = True
+        if os.path.exists(os.path.join(os.path.dirname(__file__), "config.json")):
+            with open(os.path.join(os.path.dirname(__file__), "config.json"),'r') as ff:
+                config = json.load(ff)
+            if config.get("currentDir") is not None:
+                if isinstance(config.get("currentDir"), str):
+                    if os.path.exists(config.get("currentDir")):
+                        self._currentDir = config["currentDir"]
+            if config.get("online") is not None:
+                if isinstance(config.get("online"), bool):
+                    self._online = config["online"]
+            if config.get("closing_dialog") is not None:
+                if isinstance(config.get("closing_dialog"), bool):
+                    self._closing_dialog = config["closing_dialog"]
+            if config.get("emulate") is not None:
+                if isinstance(config.get("emulate"), bool):
+                    self._emulate = config["emulate"]
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def initGui(self):
@@ -228,6 +227,7 @@ class DataViewerBase(QMainWindow):
             self._is_run = True
         else:
             self._worker_run.stop()
+            # self._worker_run.quit()
             self._worker_run.wait()
             self.brun.setText("Start")
             self._is_run = False
@@ -279,9 +279,11 @@ class DataViewerBase(QMainWindow):
                     json.dump(config, ff)
                 if self._worker_run is not None:
                     self._worker_run.stop()
+                    # self._worker_run.quit()
                     self._worker_run.wait()
                 if self._worker_check is not None:
                     self._worker_check.stop()
+                    # self._worker_check.quit()
                     self._worker_check.wait()
                 event.accept()
             else:
@@ -292,9 +294,11 @@ class DataViewerBase(QMainWindow):
                 json.dump(config, ff)
             if self._worker_run is not None:
                 self._worker_run.stop()
+                # self._worker_run.quit()
                 self._worker_run.wait()
             if self._worker_check is not None:
                 self._worker_check.stop()
+                # self._worker_check.quit()
                 self._worker_check.wait()
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
