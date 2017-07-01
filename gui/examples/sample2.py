@@ -7,15 +7,15 @@ import os
 import numpy as np
 
 class Worker2(QObject):
-    do_something = pyqtSignal()
+    do_something = pyqtSignal(object)
     finished = pyqtSignal()
 
-    def __init__(self, name = "", parent = None, data = None):
+    def __init__(self, name = "", parent = None):
         super().__init__(parent)
         self.mutex = QMutex()
         self.name = name
-        self.data = data
-        self.string = "A"
+        self.data = np.array([1,2,3])
+        self.string = ""
         self.isInterrupted = False
     
     @pyqtSlot()
@@ -24,7 +24,7 @@ class Worker2(QObject):
         self.isInterrupted = False
         count = 0
         while not self.isInterrupted:
-            if count == 5:
+            if count == 100:
                 self.isInterrupted = True
                 continue
             try:
@@ -37,7 +37,7 @@ class Worker2(QObject):
                 print(ex)
                 self.isInterrupted = True
         print("<< doWork():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
-        self.do_something.emit()
+        self.do_something.emit(self.data)
         self.finished.emit()
     
     @pyqtSlot(str)
@@ -63,7 +63,6 @@ class Worker2(QObject):
         self.finished.emit()
 
     def addA(self):
-        print("addA():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
         self.string += "A"
         print(self.string)
 
@@ -97,7 +96,7 @@ class MyForm(QMainWindow):
 
         self.setCentralWidget(main_frame)
         self.thread1 = QThread()
-        self.worker1 = Worker2(data=self.data)
+        self.worker1 = Worker2()
         self.thread1.started.connect(self.worker1.doWork)
         # self.thread1.started.connect(lambda: self.worker1.doWork())
         self.worker1.finished.connect(self.thread1.quit)
@@ -107,8 +106,8 @@ class MyForm(QMainWindow):
         self.worker1.moveToThread(self.thread1)
         print("__init__:",os.getpid(), QThread.currentThread(), QThread.currentThreadId())
 
-    @pyqtSlot()
-    def test(self):
+    @pyqtSlot(object)
+    def test(self, obj):
         print(">> test():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
         print("wait for thread's finished.")
         try:
@@ -117,7 +116,7 @@ class MyForm(QMainWindow):
         except Exception as ex:
             print(ex)
         self.button.setEnabled(True)
-        print(self.data)
+        print("Received object:", obj)
         # with QMutexLocker(self.mutex):
         #     self.string = ""
         print("<< test():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
