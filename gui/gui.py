@@ -33,7 +33,7 @@ class DataViewerBase(QMainWindow):
         print("Initialize this application...")
         self.initInnerParameters()
         self.initGui()
-        self.runCheckWindowWorker()
+        # self.runCheckWindowWorker()
     
     def initInnerParameters(self):
         """
