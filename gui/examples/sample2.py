@@ -7,40 +7,77 @@ import os
 
 class Worker2(QObject):
     do_something = pyqtSignal()
+    finished = pyqtSignal()
 
     def __init__(self, name = "", parent = None):
         super().__init__(parent)
         self.mutex = QMutex()
         self.name = name
-        self._timer = QTimer()
         self.string = "A"
+        self.isInterrupted = False
     
     @pyqtSlot()
     def doWork(self):
-        if not self._timer.isActive():
-            self._timer.setInterval(1000)
-            self._timer.timeout.connect(self.addA)
-            print("timer")
-            self._timer.start()
-            print(">> doWork():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
-        else:
-            self._timer.stop()
-            print("<< doWork():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
-            self.do_something.emit()
+        print(">> doWork():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        self.isInterrupted = False
+        count = 0
+        while not self.isInterrupted:
+            if count == 5:
+                self.isInterrupted = True
+                continue
+            try:
+                with QMutexLocker(self.mutex):
+                    self.addA()
+                time.sleep(1)
+                count += 1
+            except Exception as ex:
+                print(ex)
+                self.isInterrupted = True
+        print("<< doWork():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        self.do_something.emit()
+        self.finished.emit()
     
+    @pyqtSlot(str)
+    def doWork2(self, string):
+        self.string = string
+        print(">> doWork():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        self.isInterrupted = False
+        count = 0
+        while not self.isInterrupted:
+            if count == 5:
+                self.isInterrupted = True
+                continue
+            try:
+                with QMutexLocker(self.mutex):
+                    self.addA()
+                time.sleep(1)
+                count += 1
+            except Exception as ex:
+                print(ex)
+                self.isInterrupted = True
+        print("<< doWork():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        self.do_something.emit()
+        self.finished.emit()
+
     def addA(self):
         print("addA():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
-        print(self.string)
         self.string += "A"
+        print(self.string)
+    
+    @pyqtSlot()
+    def stop(self):
+        with QMutexLocker(self.mutex):
+            self.isInterrupted = True
+        print(self.isInterrupted)
 
 class MyForm(QMainWindow):
+    quit_signal = pyqtSignal()
+
     def __init__(self, parent=None):
-        super(MyForm, self).__init__(parent)
+        super().__init__(parent)
+        self.mutex = QMutex()
+        self.string = ""
         self.button = QPushButton('Click')
-        # エラーが発生する
-        # button.clicked.connect(self.on_click("Hello world"))
-        # lambdaを使う
-        self.string = "A"
         self.button.clicked.connect(self.on_click)
 
         layout = QHBoxLayout()
@@ -50,31 +87,38 @@ class MyForm(QMainWindow):
         main_frame.setLayout(layout)
 
         self.setCentralWidget(main_frame)
-
         self.thread1 = QThread()
         self.worker1 = Worker2()
         self.thread1.started.connect(self.worker1.doWork)
+        # self.thread1.started.connect(lambda: self.worker1.doWork())
+        self.worker1.finished.connect(self.thread1.quit)
         self.worker1.do_something.connect(self.test)
+        
+        self.quit_signal.connect(self.worker1.stop)
         self.worker1.moveToThread(self.thread1)
-        self.mutex = QMutex()
         print("__init__:",os.getpid(), QThread.currentThread(), QThread.currentThreadId())
 
     @pyqtSlot()
     def test(self):
-        print("test:", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        print(">> test():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        print("wait for thread's finished.")
+        try:
+            self.thread1.wait(10)
+            print("thread finished.")
+        except Exception as ex:
+            print(ex)
+        self.button.setEnabled(True)
+        # with QMutexLocker(self.mutex):
+        #     self.string = ""
+        print("<< test():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
 
     @pyqtSlot()
     def on_click(self):
-        print("onclick:", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
-        if not self.thread1.isRunning():
-            print("start.")
-            self.thread1.start()
-        else:
-            print("quit.")
-            self.thread1.quit()
-            print("wait.")
-            self.thread1.wait(10)
-            print("finished.")
+        print(">> onclick():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        print("thread starts.")
+        self.thread1.start()
+        self.button.setEnabled(False)
+        print("<< onclick():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
