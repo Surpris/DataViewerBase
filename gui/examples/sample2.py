@@ -4,15 +4,17 @@ from PyQt4.QtGui import *
 import sys
 import time
 import os
+import numpy as np
 
 class Worker2(QObject):
     do_something = pyqtSignal()
     finished = pyqtSignal()
 
-    def __init__(self, name = "", parent = None):
+    def __init__(self, name = "", parent = None, data = None):
         super().__init__(parent)
         self.mutex = QMutex()
         self.name = name
+        self.data = data
         self.string = "A"
         self.isInterrupted = False
     
@@ -28,6 +30,7 @@ class Worker2(QObject):
             try:
                 with QMutexLocker(self.mutex):
                     self.addA()
+                    self.addOne()
                 time.sleep(1)
                 count += 1
             except Exception as ex:
@@ -63,6 +66,11 @@ class Worker2(QObject):
         print("addA():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
         self.string += "A"
         print(self.string)
+
+    def addOne(self):
+        if isinstance(self.data, np.ndarray):
+            self.data[0] += 1
+            print(self.data)
     
     @pyqtSlot()
     def stop(self):
@@ -77,6 +85,7 @@ class MyForm(QMainWindow):
         super().__init__(parent)
         self.mutex = QMutex()
         self.string = ""
+        self.data = np.array([1, 2, 3])
         self.button = QPushButton('Click')
         self.button.clicked.connect(self.on_click)
 
@@ -88,7 +97,7 @@ class MyForm(QMainWindow):
 
         self.setCentralWidget(main_frame)
         self.thread1 = QThread()
-        self.worker1 = Worker2()
+        self.worker1 = Worker2(data=self.data)
         self.thread1.started.connect(self.worker1.doWork)
         # self.thread1.started.connect(lambda: self.worker1.doWork())
         self.worker1.finished.connect(self.thread1.quit)
@@ -108,6 +117,7 @@ class MyForm(QMainWindow):
         except Exception as ex:
             print(ex)
         self.button.setEnabled(True)
+        print(self.data)
         # with QMutexLocker(self.mutex):
         #     self.string = ""
         print("<< test():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
@@ -115,6 +125,7 @@ class MyForm(QMainWindow):
     @pyqtSlot()
     def on_click(self):
         print(">> onclick():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        print(self.data)
         print("thread starts.")
         self.thread1.start()
         self.button.setEnabled(False)
