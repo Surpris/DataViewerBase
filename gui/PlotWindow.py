@@ -19,6 +19,9 @@ from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 pg.setConfigOptions(imageAxisOrder='row-major')
 
+sys.path.append("../")
+from core.decorator import footprint
+
 class PlotWindow(QDialog):
     """
     Class for some plots.
@@ -35,24 +38,22 @@ class PlotWindow(QDialog):
         self.initInnerParameters()
         self.initGui()
 
+    @footprint
     def initInnerParameters(self):
         """
         Initialize the inner parameters.
         """
-        print(">>" + self.__class__.__name__ \
-              + "." + inspect.currentframe().f_code.co_name + "()")
         self.is_closed = False
         self._timer = QtCore.QTimer()
         self._is_emulate = False
         self.data = None
         self._subplot_size = 100
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
+    @footprint
     def initGui(self):
         """
         Initialize the GUI.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         self.resize(600, 600)
         self.grid = QGridLayout(self)
         self.grid.setSpacing(10)
@@ -67,14 +68,11 @@ class PlotWindow(QDialog):
         self.initPlotArea()
         self.grid.addWidget(self.glw, 1, 0)
 
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-
+    @footprint
     def initPlotArea(self):
         """
         Initialize the plot area.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-
         # Construct the graphic layout.
         self.glw = pg.GraphicsLayoutWidget()
         self.glw.resize(600, 600)
@@ -111,14 +109,12 @@ class PlotWindow(QDialog):
             self.py = self.glw.addPlot()
             self.py.setMaximumHeight(self._subplot_size)
 
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-
+    @footprint
     @pyqtSlot()
     def pushButton(self):
         """
         Button function.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
             if not self._timer.isActive():
                 self._timer.setInterval(1000)
@@ -130,14 +126,12 @@ class PlotWindow(QDialog):
                 self.bp.setText("Start plotting")
         except Exception as ex:
             print(ex)
-        
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
+    # @footprint
     def updateImage(self):
         """
         Update the image and the other plots.
         """
-        # print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         try:
             if self.data is not None:
                 if self._is_emulate:
@@ -154,14 +148,11 @@ class PlotWindow(QDialog):
                                 stepMode=True, fillLevel=0,brush=(0,0,255,150))
         except Exception as ex:
             print(ex)
-        
-        # print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
+    @footprint
     def closeEvent(self, event):
         self.is_closed = True
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         if self._timer.isActive():
             print("Stop the active timer.")
             self._timer.stop()
         self.data = None
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")

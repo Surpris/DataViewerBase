@@ -10,7 +10,8 @@ import inspect
 import os
 import json
 import datetime
-from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget
+from collections import OrderedDict
+from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget, QLabel, QTextList, QLineEdit
 from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
 from PyQt4.QtCore import pyqtSlot, QThread, QTimer
 from pyqtgraph.Qt import QtGui, QtCore
@@ -34,7 +35,6 @@ class DataViewerBase(QMainWindow):
         Initialization.
         """
         super().__init__()
-        print("Initialize this application...")
         self.initInnerParameters()
         self.initGui()
         self.initGetDataProcess()
@@ -49,28 +49,48 @@ class DataViewerBase(QMainWindow):
         self.sig = None
         self.bg = None
         self._timer = QTimer()
+        self._font_size_button = 16
+        self._font_size_groupbox_title = 12
+        self._font_size_label = 11
         
         self._is_run = False
         self._currentDir = os.path.dirname(__file__)
         self._emulate = True
         self._online = False
         self._closing_dialog = True
+
         if os.path.exists(os.path.join(os.path.dirname(__file__), "config.json")):
-            with open(os.path.join(os.path.dirname(__file__), "config.json"),'r') as ff:
-                config = json.load(ff)
-            if config.get("currentDir") is not None:
-                if isinstance(config.get("currentDir"), str):
-                    if os.path.exists(config.get("currentDir")):
-                        self._currentDir = config["currentDir"]
-            if config.get("online") is not None:
-                if isinstance(config.get("online"), bool):
-                    self._online = config["online"]
-            if config.get("closing_dialog") is not None:
-                if isinstance(config.get("closing_dialog"), bool):
-                    self._closing_dialog = config["closing_dialog"]
-            if config.get("emulate") is not None:
-                if isinstance(config.get("emulate"), bool):
-                    self._emulate = config["emulate"]
+            self.loadConfig()
+    
+    @footprint
+    def loadConfig(self):
+        """
+        Load a config file.
+        """
+        with open(os.path.join(os.path.dirname(__file__), "config.json"),'r') as ff:
+            config = json.load(ff)
+        if config.get("currentDir") is not None:
+            if isinstance(config.get("currentDir"), str):
+                if os.path.exists(config.get("currentDir")):
+                    self._currentDir = config["currentDir"]
+        if config.get("online") is not None:
+            if isinstance(config.get("online"), bool):
+                self._online = config["online"]
+        if config.get("closing_dialog") is not None:
+            if isinstance(config.get("closing_dialog"), bool):
+                self._closing_dialog = config["closing_dialog"]
+        if config.get("emulate") is not None:
+            if isinstance(config.get("emulate"), bool):
+                self._emulate = config["emulate"]
+        if config.get("font_size_button") is not None:
+            if isinstance(config.get("font_size_button"), int):
+                self._emulate = config["font_size_button"]
+        if config.get("font_size_groupbox_title") is not None:
+            if isinstance(config.get("font_size_groupbox_title"), int):
+                self._emulate = config["font_size_groupbox_title"]
+        if config.get("font_size_label") is not None:
+            if isinstance(config.get("font_size_label"), int):
+                self._emulate = config["font_size_label"]
     
     @footprint
     def initGui(self):
@@ -87,12 +107,66 @@ class DataViewerBase(QMainWindow):
         ### RunInfo.
         group_runinfo = QGroupBox(self)
         group_runinfo.setTitle("RunInfo")
+        font = group_runinfo.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        group_runinfo.setFont(font)
         group_runinfo.resize(400, 100)
         grid_runinfo = QGridLayout(group_runinfo)
+        
+        # Run No.
+        label_run = QLabel(self)
+        label_run.setText("Run No. : ")
+        font = label_run.font()
+        font.setPointSize(self._font_size_label)
+        label_run.setFont(font)
+        
+        self.label_run_number = QLabel(self)
+        self.label_run_number.setText("Unknown")
+        font = self.label_run_number.font()
+        font.setPointSize(self._font_size_label)
+        self.label_run_number.setFont(font)
+
+        # Tag No.
+        label_tag = QLabel(self)
+        label_tag.setText("Tag No. : ")
+        font = label_tag.font()
+        font.setPointSize(self._font_size_label)
+        label_tag.setFont(font)
+
+        self.label_tag_start = QLabel(self)
+        self.label_tag_start.setText("None")
+        font = self.label_tag_start.font()
+        font.setPointSize(self._font_size_label)
+        self.label_tag_start.setFont(font)
+
+        label_tag_hyphen = QLabel(self)
+        label_tag_hyphen.setText(" - ")
+        label_tag_hyphen.setFixedWidth(30)
+        font = label_tag_hyphen.font()
+        font.setPointSize(self._font_size_label)
+        label_tag_hyphen.setFont(font)
+
+        self.label_tag_end = QLabel(self)
+        self.label_tag_end.setText("None")
+        font = self.label_tag_end.font()
+        font.setPointSize(self._font_size_label)
+        self.label_tag_end.setFont(font)
+
+        # Construct the layout.
+        grid_runinfo.addWidget(label_run, 0, 0)
+        grid_runinfo.addWidget(self.label_run_number, 0, 1, 1, 3)
+        grid_runinfo.addWidget(label_tag, 1, 0)
+        grid_runinfo.addWidget(self.label_tag_start, 1, 1)
+        grid_runinfo.addWidget(label_tag_hyphen, 1, 2)
+        grid_runinfo.addWidget(self.label_tag_end, 1, 3)
+        
 
         ### Function buttons.
         group_func = QGroupBox(self)
-        group_func.setTitle("Functions")
+        group_func.setTitle("Setting")
+        font = group_func.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        group_func.setFont(font)
         group_func.resize(400, 100)
         box_func = QHBoxLayout(group_func)
         box_func.setSpacing(10)
@@ -101,7 +175,7 @@ class DataViewerBase(QMainWindow):
         self.brun = QPushButton(group_func)
         self.brun.setText("Start")
         font = self.brun.font()
-        font.setPointSize(16)
+        font.setPointSize(self._font_size_button)
         self.brun.setFont(font)
         self.brun.resize(400, 50)
         self.brun.clicked.connect(self.runMainProcess)
@@ -110,7 +184,7 @@ class DataViewerBase(QMainWindow):
         bwindow = QPushButton(group_func)
         bwindow.setText("Window")
         font = bwindow.font()
-        font.setPointSize(16)
+        font.setPointSize(self._font_size_button)
         bwindow.setFont(font)
         bwindow.resize(400, 50)
         bwindow.clicked.connect(self.showWindow)
@@ -240,12 +314,10 @@ class DataViewerBase(QMainWindow):
     
     @pyqtSlot()
     def mainProcess(self):
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         if self._emulate:
             self.updateEmulateData()
         else:
             pass
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
 ######################## GetDataProcess ########################
     
@@ -267,13 +339,13 @@ class DataViewerBase(QMainWindow):
         self._timer_checkWindow.timeout.connect(self.checkWindow)
         self._timer_checkWindow.start()
     
-    @footprint
+    # @footprint
     @pyqtSlot()
     def checkWindow(self):
         """
         Check whether windows are active.
         """
-        print(len(self._windows))
+        # print(len(self._windows))
         N = len(self._windows)*1
         for ii in range(N):
             if self._windows[N-ii-1].is_closed:
@@ -313,7 +385,7 @@ class DataViewerBase(QMainWindow):
         else:
             self.makeConfig()
             with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
-                json.dump(self.config, ff)
+                json.dump(self.config, ff, indent=4)
             if self._timer_checkWindow.isActive():
                 print("Stop checkWindow timer...")
                 self._timer_checkWindow.stop()
@@ -324,8 +396,19 @@ class DataViewerBase(QMainWindow):
         """
         Make a config dict object to save the latest configration in.
         """
-        self.config = {"online":self._online, "closing_dialog":self._closing_dialog, 
-                       "currentDir":self._currentDir, "emulate":self._emulate}
+        # self.config = {"online":self._online, "closing_dialog":self._closing_dialog, 
+        #                "currentDir":self._currentDir, "emulate":self._emulate, 
+        #                "font_size_button":self._font_size_button,
+        #                "font_size_label":self._font_size_label,
+        #                "font_size_groupbox_title":self._font_size_groupbox_title}
+        self.config = OrderedDict([
+            ("online", self._online), 
+            ("closing_dialog", self._closing_dialog), 
+            ("currentDir", self._currentDir), 
+            ("emulate", self._emulate), 
+            ("font_size_button", self._font_size_button),
+            ("font_size_label", self._font_size_label),
+            ("font_size_groupbox_title", self._font_size_groupbox_title)])
 
 
  ######################## Emulation functions ########################
