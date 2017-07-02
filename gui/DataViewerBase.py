@@ -20,12 +20,14 @@ import pyqtgraph as pg
 sys.path.append("../")
 from gui import PlotWindow
 from core.Worker import *
+from core.decorator import footprint
 
 class DataViewerBase(QMainWindow):
     """
     Base GUI class for viewing data / images.
     This class was made in the purpose of viewing VMI images.
     """
+    # _name = DataViewerBase().__class__.__name__
 
     def __init__(self):
         """
@@ -38,11 +40,11 @@ class DataViewerBase(QMainWindow):
         self.initGetDataProcess()
         self.initCheckWindowProcess()
     
+    @footprint
     def initInnerParameters(self):
         """
         Initialize the inner parameters.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         self._windows = []
         self.sig = None
         self.bg = None
@@ -69,13 +71,12 @@ class DataViewerBase(QMainWindow):
             if config.get("emulate") is not None:
                 if isinstance(config.get("emulate"), bool):
                     self._emulate = config["emulate"]
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
+    @footprint
     def initGui(self):
         """
         Initialize the GUI.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.initMainWidget()
         self.setMenuBar()
@@ -134,34 +135,36 @@ class DataViewerBase(QMainWindow):
         self.grid.addWidget(self.pw3, 1, 2, 2, 1)
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
-
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
+    @footprint
     def initMainWidget(self):
         """
         Initialize the main widget and the grid.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         self.main_widget = QWidget(self)
         self.grid = QGridLayout(self.main_widget)
         self.grid.setSpacing(10)
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
+    @footprint
     def setMenuBar(self):
         """
         Set the contents of the menu bar
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         ## File
         file_menu = QMenu('&File', self)
 
         # Open
-        file_menu.addAction('&Open', self.openFile,
-                QtCore.Qt.CTRL + QtCore.Qt.Key_O)
-        self.menuBar().addMenu(file_menu)
+        # file_menu.addAction('&Open', self.openFile,
+        #         QtCore.Qt.CTRL + QtCore.Qt.Key_O)
+
+        # Config
+        file_menu.addAction('&Config', self.setConfig,
+                QtCore.Qt.CTRL + QtCore.Qt.Key_C)
         # Quit
         file_menu.addAction('&Quit', self.quitApp,
                 QtCore.Qt.CTRL + QtCore.Qt.Key_Q)
+        
+        self.menuBar().addMenu(file_menu)
 
         ## Help
         help_menu = QMenu('&Help', self)
@@ -169,43 +172,47 @@ class DataViewerBase(QMainWindow):
         help_menu.addAction('About...', self.showAbout)
         self.menuBar().addSeparator()
         self.menuBar().addMenu(help_menu)
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
 ######################## Menu bar ########################
 
+    @footprint
     def openFile(self):
         """
         Show a file dialog and select a file
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         pass
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
+    @footprint
+    def setConfig(self):
+        """
+        Set configuration of this application.
+        """
+        pass
+
+    @footprint
     def quitApp(self):
         """
         Quit this application.
         """
         self.close()
     
-    
+    @footprint
     def showHelp(self):
         """
         Show a pop-up dialog showing how to use this application.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         pass
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-    
+
+    @footprint
     def showAbout(self):
         """
         Show a pop-up dialog describing this application.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         pass
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
 ######################## Widgets' functions ########################
 
+    @footprint
     @pyqtSlot()
     def showWindow(self):
         window = PlotWindow(self, "win{0:02d}".format(len(self._windows)+1))
@@ -241,6 +248,8 @@ class DataViewerBase(QMainWindow):
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
 ######################## GetDataProcess ########################
+    
+    @footprint
     def initGetDataProcess(self):
         self._timer_getData = QTimer()
         self._thread_getData = QThread()
@@ -248,6 +257,7 @@ class DataViewerBase(QMainWindow):
 
 ######################## CheckWindowProcess ########################
 
+    @footprint
     def initCheckWindowProcess(self):
         """
         Initialize checkWindow process.
@@ -257,6 +267,7 @@ class DataViewerBase(QMainWindow):
         self._timer_checkWindow.timeout.connect(self.checkWindow)
         self._timer_checkWindow.start()
     
+    @footprint
     @pyqtSlot()
     def checkWindow(self):
         """
@@ -267,15 +278,16 @@ class DataViewerBase(QMainWindow):
         for ii in range(N):
             if self._windows[N-ii-1].is_closed:
                 del self._windows[N-ii-1]
-    
+
+    @footprint
     @pyqtSlot()
     def finishWorker(self):
         pass
 
 ######################## Closing processes ########################
 
+    @footprint
     def closeEvent(self, event):
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         if self._thread_getData.isRunning():
             string = "Some threads are still running.\n"
             string += "Please wait for their finishing."
@@ -288,9 +300,9 @@ class DataViewerBase(QMainWindow):
                 "Are you sure to quit?", QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No)
             if confirmObject == QMessageBox.Yes:
-                config = self.makeConfig()
+                self.makeConfig()
                 with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
-                    json.dump(config, ff)
+                    json.dump(self.config, ff)
                 if self._timer_checkWindow.isActive():
                     print("Stop checkWindow timer...")
                     self._timer_checkWindow.stop()
@@ -299,38 +311,34 @@ class DataViewerBase(QMainWindow):
             else:
                 event.ignore()
         else:
-            config = self.makeConfig()
+            self.makeConfig()
             with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
-                json.dump(config, ff)
+                json.dump(self.config, ff)
             if self._timer_checkWindow.isActive():
                 print("Stop checkWindow timer...")
                 self._timer_checkWindow.stop()
                 print("checkWindow timer stopped.")
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
+    @footprint
     def makeConfig(self):
         """
         Make a config dict object to save the latest configration in.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-        config = {"online":self._online, "closing_dialog":self._closing_dialog, 
-                "currentDir":self._currentDir, "emulate":self._emulate}
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
-        return config
+        self.config = {"online":self._online, "closing_dialog":self._closing_dialog, 
+                       "currentDir":self._currentDir, "emulate":self._emulate}
 
 
  ######################## Emulation functions ########################
-    
+
+    @footprint
     def emulateData(self):
         """
         Emulate data.
         TODO: modify so that this function works on a worker.
         """
-        print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         self._timer.setInterval(2000)
         self._timer.timeout.connect(self.updateEmulateData)
         self._timer.start()
-        print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def updateEmulateData(self):
         self.sig = np.random.normal(100, 10, (100, 100))
