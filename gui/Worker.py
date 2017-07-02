@@ -65,7 +65,7 @@ class Worker(QObject):
         self.finished.emit()
     
     @pyqtSlot(object)
-    def process2(self, object):
+    def process2(self, obj):
         """
         This function stops the thread calling this object.
         """
@@ -91,6 +91,8 @@ class Worker(QObject):
         self.isStopped = True
 
 class GetDataWorker(Worker):
+    sendData = pyqtSignal(object)
+
     def __init__(self, name = "", parent = None):
         super().__init__(name=name, parent=parent)
         self.count = 0
@@ -98,11 +100,13 @@ class GetDataWorker(Worker):
     def _process(self):
         # print(">> _process():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
         self.count += 1
+        self.sendData.emit("B")
         print(self.count)
         time.sleep(1)
         if self.count == 10:
             self.StopWorking = True
             self.data = "FFF"
+            self.count = 0
 
 class Worker_Sample(QObject):
     do_something = pyqtSignal(object)

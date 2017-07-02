@@ -22,9 +22,13 @@ class MyForm(QMainWindow):
         self.button2 = QPushButton('Click2')
         self.button2.clicked.connect(self.on_click2)
 
-        layout = QHBoxLayout()
+        self.label1 = QLabel(self)
+        self.label1.setText("")
+
+        layout = QVBoxLayout()
         layout.addWidget(self.button)
         layout.addWidget(self.button2)
+        layout.addWidget(self.label1)
 
         main_frame = QWidget()
         main_frame.setLayout(layout)
@@ -39,6 +43,7 @@ class MyForm(QMainWindow):
         # self.thread1.started.connect(lambda: self.worker1.process())
         self.worker1.finished.connect(self.thread1.quit)
         self.worker1.do_something.connect(self.test)
+        self.worker1.sendData.connect(self.test2)
         
         # self.quit_signal.connect(self.worker1.stop)
         self.worker1.moveToThread(self.thread1)
@@ -54,10 +59,19 @@ class MyForm(QMainWindow):
         except Exception as ex:
             print(ex)
         self.button.setEnabled(True)
+        self.label1.setText("")
         print("Received object:", obj)
         # with QMutexLocker(self.mutex):
         #     self.string = ""
         print("<< test():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+    
+    @pyqtSlot(object)
+    def test2(self, obj):
+        print(">> test2():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        print("Object received during worker processing:", obj)
+        if isinstance(obj, str):
+            self.label1.setText(self.label1.text() + obj)
+        print("<< test2():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
 
     @pyqtSlot()
     def on_click(self):
