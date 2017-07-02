@@ -12,12 +12,14 @@ import json
 import datetime
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget
 from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
-from PyQt4.QtCore import pyqtSlot, QThread
+from PyQt4.QtCore import pyqtSlot, QThread, QTimer
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
-from PlotWindow import PlotWindow
-from Worker import Worker
+
+sys.path.append("../")
+from gui import PlotWindow
+from core.Worker import *
 
 class DataViewerBase(QMainWindow):
     """
@@ -33,7 +35,8 @@ class DataViewerBase(QMainWindow):
         print("Initialize this application...")
         self.initInnerParameters()
         self.initGui()
-        # self.runCheckWindowWorker()
+        self.initGetDataProcess()
+        self.initCheckWindowProcess()
     
     def initInnerParameters(self):
         """
@@ -41,13 +44,9 @@ class DataViewerBase(QMainWindow):
         """
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
         self._windows = []
-        self._thread_check = QThread()
-        self._thread_run = QThread()
-        self._worker_check = None
-        self._worker_run = None
         self.sig = None
         self.bg = None
-        self._timer = QtCore.QTimer()
+        self._timer = QTimer()
         
         self._is_run = False
         self._currentDir = os.path.dirname(__file__)
@@ -218,17 +217,17 @@ class DataViewerBase(QMainWindow):
     @pyqtSlot()
     def runMainProcess(self):
         if not self._is_run:
-            self._worker_run = Worker(name="RunWorker")
-            self._worker_run.sleep_interval = 1900
-            self._worker_run.do_something.connect(self.mainProcess)
-            self._worker_run.finished.connect(self.finishWorker)
-            self._worker_run.start()
+            self._worker_getData = Worker(name="RunWorker")
+            self._worker_getData.sleep_interval = 1900
+            self._worker_getData.do_something.connect(self.mainProcess)
+            self._worker_getData.finished.connect(self.finishWorker)
+            self._worker_getData.start()
             self.brun.setText("Stop")
             self._is_run = True
         else:
-            self._worker_run.stop()
-            # self._worker_run.quit()
-            self._worker_run.wait()
+            self._worker_getData.stop()
+            # self._worker_getData.quit()
+            self._worker_getData.wait()
             self.brun.setText("Start")
             self._is_run = False
     
@@ -241,14 +240,22 @@ class DataViewerBase(QMainWindow):
             pass
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
 
-######################## Checking worker ########################
+######################## GetDataProcess ########################
+    def initGetDataProcess(self):
+        self._timer_getData = QTimer()
+        self._thread_getData = QThread()
+        self._worker_getData = GetDataWorker()
 
-    def runCheckWindowWorker(self):
-        self._worker_check = Worker(name="checkWindowWorker")
-        self._worker_check.sleep_interval = 1900
-        self._worker_check.do_something.connect(self.checkWindow)
-        self._worker_check.finished.connect(self.finishWorker)
-        self._worker_check.start()
+######################## CheckWindowProcess ########################
+
+    def initCheckWindowProcess(self):
+        """
+        Initialize checkWindow process.
+        """
+        self._timer_checkWindow = QTimer()
+        self._timer_checkWindow.setInterval(1000)
+        self._timer_checkWindow.timeout.connect(self.checkWindow)
+        self._timer_checkWindow.start()
     
     @pyqtSlot()
     def checkWindow(self):
@@ -269,6 +276,13 @@ class DataViewerBase(QMainWindow):
 
     def closeEvent(self, event):
         print(">>" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
+        if self._thread_getData.isRunning():
+            string = "Some threads are still running.\n"
+            string += "Please wait for their finishing."
+            confirmObject = QMessageBox.warning(self, "Closing is ignored.",
+                string, QMessageBox.Ok)
+            event.ignore()
+            return
         if self._closing_dialog:
             confirmObject = QMessageBox.question(self, "Closing...",
                 "Are you sure to quit?", QMessageBox.Yes | QMessageBox.No,
@@ -277,14 +291,10 @@ class DataViewerBase(QMainWindow):
                 config = self.makeConfig()
                 with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                     json.dump(config, ff)
-                if self._worker_run is not None:
-                    self._worker_run.stop()
-                    # self._worker_run.quit()
-                    self._worker_run.wait()
-                if self._worker_check is not None:
-                    self._worker_check.stop()
-                    # self._worker_check.quit()
-                    self._worker_check.wait()
+                if self._timer_checkWindow.isActive():
+                    print("Stop checkWindow timer...")
+                    self._timer_checkWindow.stop()
+                    print("checkWindow timer stopped.")
                 event.accept()
             else:
                 event.ignore()
@@ -292,14 +302,10 @@ class DataViewerBase(QMainWindow):
             config = self.makeConfig()
             with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                 json.dump(config, ff)
-            if self._worker_run is not None:
-                self._worker_run.stop()
-                # self._worker_run.quit()
-                self._worker_run.wait()
-            if self._worker_check is not None:
-                self._worker_check.stop()
-                # self._worker_check.quit()
-                self._worker_check.wait()
+            if self._timer_checkWindow.isActive():
+                print("Stop checkWindow timer...")
+                self._timer_checkWindow.stop()
+                print("checkWindow timer stopped.")
         print("<<" + self.__class__.__name__ + "." + inspect.currentframe().f_code.co_name + "()")
     
     def makeConfig(self):

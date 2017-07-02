@@ -7,7 +7,7 @@ import inspect
 import os
 import numpy as np
 sys.path.append("../")
-from gui.Worker import GetDataWorker, Worker, Worker_Sample
+from core.Worker import GetDataWorker, Worker, Worker_Sample
 
 class MyForm(QMainWindow):
     quit_signal = pyqtSignal()

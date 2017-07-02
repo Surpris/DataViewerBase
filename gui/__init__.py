@@ -2,5 +2,5 @@
 
 from . import PlotWindow
 from .PlotWindow import PlotWindow
-from . import Worker
-from .Worker import *
+from . import DataViewerBase
+from .DataViewerBase import DataViewerBase
