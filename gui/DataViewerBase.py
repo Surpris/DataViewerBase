@@ -13,7 +13,8 @@ import datetime
 from collections import OrderedDict
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget, QLabel, QTextList, QLineEdit
 from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
-from PyQt4.QtCore import pyqtSlot, QThread, QTimer
+from PyQt4.QtGui import QStyle, QPalette, QColor
+from PyQt4.QtCore import pyqtSlot, QThread, QTimer, Qt
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
@@ -52,6 +53,8 @@ class DataViewerBase(QMainWindow):
         self._font_size_button = 16
         self._font_size_groupbox_title = 12
         self._font_size_label = 11
+        self._init_window_width = 1400
+        self._init_window_height = 700
         
         self._is_run = False
         self._currentDir = os.path.dirname(__file__)
@@ -102,7 +105,7 @@ class DataViewerBase(QMainWindow):
         self.setMenuBar()
 
         self.setWindowTitle("VMI Viewer")
-        self.resize(1280, 600)
+        self.resize(self._init_window_width, self._init_window_height)
 
         ### RunInfo.
         group_runinfo = QGroupBox(self)
@@ -122,7 +125,11 @@ class DataViewerBase(QMainWindow):
         
         self.label_run_number = QLabel(self)
         self.label_run_number.setText("Unknown")
+        pal = QPalette()
+        pal.setColor(QPalette.Foreground, QColor("#0B5345"))
+        self.label_run_number.setPalette(pal)
         font = self.label_run_number.font()
+        font.setBold(True)
         font.setPointSize(self._font_size_label)
         self.label_run_number.setFont(font)
 
@@ -136,6 +143,7 @@ class DataViewerBase(QMainWindow):
         self.label_tag_start = QLabel(self)
         self.label_tag_start.setText("None")
         font = self.label_tag_start.font()
+        font.setBold(True)
         font.setPointSize(self._font_size_label)
         self.label_tag_start.setFont(font)
 
@@ -149,17 +157,86 @@ class DataViewerBase(QMainWindow):
         self.label_tag_end = QLabel(self)
         self.label_tag_end.setText("None")
         font = self.label_tag_end.font()
+        font.setBold(True)
         font.setPointSize(self._font_size_label)
         self.label_tag_end.setFont(font)
+
+        # Sig / BG.
+        label_sig = QLabel(self)
+        label_sig.setText("Sig # : ")
+        font = label_sig.font()
+        font.setPointSize(self._font_size_label)
+        label_sig.setFont(font)
+
+        self.label_sig_number = QLabel(self)
+        self.label_sig_number.setText("None")
+        font = self.label_sig_number.font()
+        font.setBold(True)
+        font.setPointSize(self._font_size_label)
+        self.label_sig_number.setFont(font)
+
+        label_bg = QLabel(self)
+        label_bg.setText("BG # : ")
+        font = label_bg.font()
+        font.setPointSize(self._font_size_label)
+        label_bg.setFont(font)
+
+        self.label_bg_number = QLabel(self)
+        self.label_bg_number.setText("None")
+        font = self.label_bg_number.font()
+        font.setBold(True)
+        font.setPointSize(self._font_size_label)
+        self.label_bg_number.setFont(font)
 
         # Construct the layout.
         grid_runinfo.addWidget(label_run, 0, 0)
         grid_runinfo.addWidget(self.label_run_number, 0, 1, 1, 3)
+        
         grid_runinfo.addWidget(label_tag, 1, 0)
         grid_runinfo.addWidget(self.label_tag_start, 1, 1)
         grid_runinfo.addWidget(label_tag_hyphen, 1, 2)
         grid_runinfo.addWidget(self.label_tag_end, 1, 3)
+
+        grid_runinfo.addWidget(label_sig, 2, 0)
+        grid_runinfo.addWidget(self.label_sig_number, 2, 1)
+        grid_runinfo.addWidget(label_bg, 2, 2)
+        grid_runinfo.addWidget(self.label_bg_number, 2, 3)
+
+        ### Settings.
+        group_settings = QGroupBox(self)
+        group_settings.setTitle("RunInfo")
+        font = group_settings.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        group_settings.setFont(font)
+        group_settings.resize(400, 100)
+        grid_settings = QGridLayout(group_settings)
+
+        # Update interval.
+        label_upd_rate = QLabel(self)
+        label_upd_rate.setText("Upd. interval: ")
+        font = label_upd_rate.font()
+        font.setPointSize(self._font_size_label)
+        label_upd_rate.setFont(font)
         
+        self.textbox_upd_rate = QLineEdit(self)
+        self.textbox_upd_rate.setText("1")
+        self.textbox_upd_rate.setFixedWidth(60)
+        self.textbox_upd_rate.setAlignment(Qt.AlignRight)
+        font = self.textbox_upd_rate.font()
+        font.setBold(True)
+        font.setPointSize(self._font_size_label)
+        self.textbox_upd_rate.setFont(font)
+
+        label_upd_rate_unit = QLabel(self)
+        label_upd_rate_unit.setText("sec")
+        font = label_upd_rate_unit.font()
+        font.setPointSize(self._font_size_label)
+        label_upd_rate_unit.setFont(font)
+
+        # Construct the layout.
+        grid_settings.addWidget(label_upd_rate, 0, 0, 1, 3)
+        grid_settings.addWidget(self.textbox_upd_rate, 0, 3)
+        grid_settings.addWidget(label_upd_rate_unit, 0, 4)
 
         ### Function buttons.
         group_func = QGroupBox(self)
@@ -194,16 +271,15 @@ class DataViewerBase(QMainWindow):
         box_func.addWidget(bwindow)
 
         ### Plotting area.
-        self.pw1 = PlotWindow(self, px=False, py=False, ph=False)
-        self.pw1.bp.setEnabled(False)
-        self.pw2 = PlotWindow(self, px=False, py=False, ph=False)
-        self.pw2.bp.setEnabled(False)
-        self.pw3 = PlotWindow(self, px=False, py=False, ph=False)
-        self.pw3.bp.setEnabled(False)
+        kwargs = dict(px=False, py=False, ph=False, bp=False)
+        self.pw1 = PlotWindow(self, **kwargs)
+        self.pw2 = PlotWindow(self, **kwargs)
+        self.pw3 = PlotWindow(self, **kwargs)
 
         ### Construct the layout.
         self.grid.addWidget(group_runinfo, 0, 0)
-        self.grid.addWidget(group_func, 0, 1)
+        self.grid.addWidget(group_settings, 0, 1)
+        self.grid.addWidget(group_func, 0, 2)
         self.grid.addWidget(self.pw1, 1, 0, 2, 1)
         self.grid.addWidget(self.pw2, 1, 1, 2, 1)
         self.grid.addWidget(self.pw3, 1, 2, 2, 1)
@@ -396,11 +472,6 @@ class DataViewerBase(QMainWindow):
         """
         Make a config dict object to save the latest configration in.
         """
-        # self.config = {"online":self._online, "closing_dialog":self._closing_dialog, 
-        #                "currentDir":self._currentDir, "emulate":self._emulate, 
-        #                "font_size_button":self._font_size_button,
-        #                "font_size_label":self._font_size_label,
-        #                "font_size_groupbox_title":self._font_size_groupbox_title}
         self.config = OrderedDict([
             ("online", self._online), 
             ("closing_dialog", self._closing_dialog), 

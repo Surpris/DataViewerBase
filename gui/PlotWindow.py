@@ -59,10 +59,12 @@ class PlotWindow(QDialog):
         self.grid.setSpacing(10)
 
         ## Some buttons.
-        self.bp = QPushButton()
-        self.bp.setText("Start plotting")
-        self.bp.clicked.connect(self.pushButton)
-        self.grid.addWidget(self.bp, 0, 0, 1, 1)
+        self._is_bp = self.kwargs.get("bp", True)
+        if self._is_bp:
+            self.bp = QPushButton()
+            self.bp.setText("Start plotting")
+            self.bp.clicked.connect(self.pushButton)
+            self.grid.addWidget(self.bp, 0, 0, 1, 1)
 
         ## Plotting area.
         self.initPlotArea()

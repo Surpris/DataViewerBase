@@ -1,1 +1,9 @@
-{"currentDir": ".\\gui", "closing_dialog": false, "online": false}
+{
+    "online": false,
+    "closing_dialog": false,
+    "currentDir": "C:\\Users\\Surpris\\SkyDrive\\Documents\\Python\\DataViewerBase\\gui",
+    "emulate": 11,
+    "font_size_button": 16,
+    "font_size_label": 11,
+    "font_size_groupbox_title": 12
+}
