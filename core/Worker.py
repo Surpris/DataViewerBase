@@ -95,18 +95,11 @@ class GetDataWorker(Worker):
 
     def __init__(self, name = "", parent = None):
         super().__init__(name=name, parent=parent)
-        self.count = 0
 
     def _process(self):
-        # print(">> _process():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
-        self.count += 1
-        self.sendData.emit("B")
-        print(self.count)
+        self.data = np.random.uniform(0.0, 10., (1000, 2000))
         time.sleep(0.5)
-        if self.count == 10:
-            self.StopWorking = True
-            self.data = "FFF"
-            self.count = 0
+        self.StopWorking = True
 
 class Worker_Sample(QObject):
     do_something = pyqtSignal(object)

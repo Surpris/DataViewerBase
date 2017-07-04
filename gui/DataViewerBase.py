@@ -14,7 +14,7 @@ from collections import OrderedDict
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget, QLabel, QTextList, QLineEdit
 from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
 from PyQt4.QtGui import QStyle, QPalette, QColor
-from PyQt4.QtCore import pyqtSlot, QThread, QTimer, Qt
+from PyQt4.QtCore import pyqtSlot, QThread, QTimer, Qt, QMutex
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
@@ -46,17 +46,16 @@ class DataViewerBase(QMainWindow):
         """
         Initialize the inner parameters.
         """
+        self._mutex = QMutex()
         self._windows = []
         self.sig = None
         self.bg = None
-        self._timer = QTimer()
         self._font_size_button = 16
         self._font_size_groupbox_title = 12
         self._font_size_label = 11
         self._init_window_width = 1400
         self._init_window_height = 700
-        
-        self._is_run = False
+
         self._currentDir = os.path.dirname(__file__)
         self._emulate = True
         self._online = False
@@ -401,7 +400,7 @@ class DataViewerBase(QMainWindow):
         # Start.
         self._timer_getData.timeout.connect(self.startGettingDataThread)
         self._thread_getData.started.connect(self._worker_getData.process)
-        self._worker_getData.sendData.connect(self.updateData)
+        self._worker_getData.do_something.connect(self.updateData)
 
         # Finish.
         self._worker_getData.finished.connect(self._thread_getData.quit)
@@ -422,20 +421,22 @@ class DataViewerBase(QMainWindow):
         if self._emulate:
             self.updateEmulateData()
         else:
-            self.sig = obj.copy()
-            self.bg = obj.copy()
-        self.updateImage()
+            print(obj.shape)
+        #     self.sig = obj.copy()
+        #     self.bg = obj.copy()
+        # self.updateImage()
     
     @footprint
     def updateImage(self):
-        self.pw1.data = self.sig
-        self.pw1.updateImage()
-        self.pw2.data = self.bg
-        self.pw2.updateImage()
-        self.pw3.data = self.sig - self.bg
-        self.pw3.updateImage()
-        for window in self._windows:
-            window.data = self.sig
+        with QMutexLocker(self._mutex):
+            self.pw1.data = self.sig
+            self.pw1.updateImage()
+            self.pw2.data = self.bg
+            self.pw2.updateImage()
+            self.pw3.data = self.sig - self.bg
+            self.pw3.updateImage()
+            for window in self._windows:
+                window.data = self.sig
 
     @footprint
     @pyqtSlot()
@@ -527,16 +528,6 @@ class DataViewerBase(QMainWindow):
 
 
  ######################## Emulation functions ########################
-
-    # @footprint
-    # def emulateData(self):
-    #     """
-    #     Emulate data.
-    #     TODO: modify so that this function works on a worker.
-    #     """
-    #     self._timer.setInterval(2000)
-    #     self._timer.timeout.connect(self.updateEmulateData)
-    #     self._timer.start()
     
     @footprint
     def updateEmulateData(self):
