@@ -21,7 +21,7 @@ class WorkerThread(QThread):
         self.mutex = QMutex()
         self.name = name
         self.isStopped = False
-        
+
     def run(self):
         while not self.isStopped:
         # while True:
@@ -46,7 +46,7 @@ class Worker(QObject):
         self.name = name
         self.data = None
         self.StopWorking = False
-    
+
     @pyqtSlot()
     def process(self):
         """
@@ -63,7 +63,7 @@ class Worker(QObject):
                 self.StopWorking = True
         self.do_something.emit(self.data)
         self.finished.emit()
-    
+
     @pyqtSlot(object)
     def process2(self, obj):
         """
@@ -80,7 +80,7 @@ class Worker(QObject):
                 self.StopWorking = True
         self.do_something.emit(self.data)
         self.finished.emit()
-    
+
     def _process(self):
         """
         Something to do should descriibed in this function.
@@ -102,7 +102,7 @@ class GetDataWorker(Worker):
         self.count += 1
         self.sendData.emit("B")
         print(self.count)
-        time.sleep(1)
+        time.sleep(0.5)
         if self.count == 10:
             self.StopWorking = True
             self.data = "FFF"
@@ -119,7 +119,7 @@ class Worker_Sample(QObject):
         self.data = np.array([1,2,3])
         self.string = ""
         self.isInterrupted = False
-    
+
     @pyqtSlot()
     def process(self):
         print(">> process():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
@@ -150,7 +150,7 @@ class Worker_Sample(QObject):
         if isinstance(self.data, np.ndarray):
             self.data[0] += 1
             print(self.data)
-    
+
     @pyqtSlot()
     def stop(self):
         with QMutexLocker(self.mutex):

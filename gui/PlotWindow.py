@@ -26,6 +26,7 @@ class PlotWindow(QDialog):
     """
     Class for some plots.
     """
+
     def __init__(self, parent=None, name = "", **kwargs):
         """
         Initialization.
@@ -130,6 +131,7 @@ class PlotWindow(QDialog):
             print(ex)
 
     # @footprint
+    @pyqtSlot()
     def updateImage(self):
         """
         Update the image and the other plots.

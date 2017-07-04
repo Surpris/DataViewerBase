@@ -87,13 +87,13 @@ class DataViewerBase(QMainWindow):
                 self._emulate = config["emulate"]
         if config.get("font_size_button") is not None:
             if isinstance(config.get("font_size_button"), int):
-                self._emulate = config["font_size_button"]
+                self._font_size_button = config["font_size_button"]
         if config.get("font_size_groupbox_title") is not None:
             if isinstance(config.get("font_size_groupbox_title"), int):
-                self._emulate = config["font_size_groupbox_title"]
+                self._font_size_groupbox_title = config["font_size_groupbox_title"]
         if config.get("font_size_label") is not None:
             if isinstance(config.get("font_size_label"), int):
-                self._emulate = config["font_size_label"]
+                self._font_size_label = config["font_size_label"]
     
     @footprint
     def initGui(self):
@@ -204,7 +204,7 @@ class DataViewerBase(QMainWindow):
 
         ### Settings.
         group_settings = QGroupBox(self)
-        group_settings.setTitle("RunInfo")
+        group_settings.setTitle("Settings")
         font = group_settings.font()
         font.setPointSize(self._font_size_groupbox_title)
         group_settings.setFont(font)
@@ -371,37 +371,81 @@ class DataViewerBase(QMainWindow):
         window.activateWindow()
         self._windows.append(window)
     
+    @footprint
     @pyqtSlot()
     def runMainProcess(self):
-        if not self._is_run:
-            self._worker_getData = Worker(name="RunWorker")
-            self._worker_getData.sleep_interval = 1900
-            self._worker_getData.do_something.connect(self.mainProcess)
-            self._worker_getData.finished.connect(self.finishWorker)
-            self._worker_getData.start()
+        if not self._timer_getData.isActive():
+            self._timer_getData.start()
             self.brun.setText("Stop")
-            self._is_run = True
         else:
-            self._worker_getData.stop()
-            # self._worker_getData.quit()
-            self._worker_getData.wait()
-            self.brun.setText("Start")
-            self._is_run = False
+            self.brun.setEnabled(False)
+            self.stopTimer = True
     
-    @pyqtSlot()
-    def mainProcess(self):
-        if self._emulate:
-            self.updateEmulateData()
-        else:
-            pass
+    # @pyqtSlot()
+    # def mainProcess(self):
+    #     if self._emulate:
+    #         self.updateEmulateData()
+    #     else:
+    #         pass
 
 ######################## GetDataProcess ########################
     
     @footprint
     def initGetDataProcess(self):
         self._timer_getData = QTimer()
+        self._timer_getData.setInterval(1000)
+        self.stopTimer = False
         self._thread_getData = QThread()
         self._worker_getData = GetDataWorker()
+        
+        # Start.
+        self._timer_getData.timeout.connect(self.startGettingDataThread)
+        self._thread_getData.started.connect(self._worker_getData.process)
+        self._worker_getData.sendData.connect(self.updateData)
+
+        # Finish.
+        self._worker_getData.finished.connect(self._thread_getData.quit)
+        self._thread_getData.finished.connect(self.checkTimerGettingData)
+    
+    @footprint
+    @pyqtSlot()
+    def startGettingDataThread(self):
+        if not self._thread_getData.isRunning():
+            print("start thread by timer.")
+            self._thread_getData.start()
+        else:
+            print("Thread is running.")
+    
+    @footprint
+    @pyqtSlot(object)
+    def updateData(self, obj):
+        if self._emulate:
+            self.updateEmulateData()
+        else:
+            self.sig = obj.copy()
+            self.bg = obj.copy()
+        self.updateImage()
+    
+    @footprint
+    def updateImage(self):
+        self.pw1.data = self.sig
+        self.pw1.updateImage()
+        self.pw2.data = self.bg
+        self.pw2.updateImage()
+        self.pw3.data = self.sig - self.bg
+        self.pw3.updateImage()
+        for window in self._windows:
+            window.data = self.sig
+
+    @footprint
+    @pyqtSlot()
+    def checkTimerGettingData(self):
+        if self.stopTimer:
+            self._timer_getData.stop()
+            print("timer stopped.")
+            self.stopTimer = False
+            self.brun.setEnabled(True)
+            self.brun.setText("Start")
 
 ######################## CheckWindowProcess ########################
 
@@ -427,10 +471,10 @@ class DataViewerBase(QMainWindow):
             if self._windows[N-ii-1].is_closed:
                 del self._windows[N-ii-1]
 
-    @footprint
-    @pyqtSlot()
-    def finishWorker(self):
-        pass
+    # @footprint
+    # @pyqtSlot()
+    # def finishWorker(self):
+    #     pass
 
 ######################## Closing processes ########################
 
@@ -484,27 +528,20 @@ class DataViewerBase(QMainWindow):
 
  ######################## Emulation functions ########################
 
-    @footprint
-    def emulateData(self):
-        """
-        Emulate data.
-        TODO: modify so that this function works on a worker.
-        """
-        self._timer.setInterval(2000)
-        self._timer.timeout.connect(self.updateEmulateData)
-        self._timer.start()
+    # @footprint
+    # def emulateData(self):
+    #     """
+    #     Emulate data.
+    #     TODO: modify so that this function works on a worker.
+    #     """
+    #     self._timer.setInterval(2000)
+    #     self._timer.timeout.connect(self.updateEmulateData)
+    #     self._timer.start()
     
+    @footprint
     def updateEmulateData(self):
         self.sig = np.random.normal(100, 10, (100, 100))
         self.bg = np.random.normal(100, 10, (100, 100))
-        self.pw1.data = self.sig
-        self.pw1.updateImage()
-        self.pw2.data = self.bg
-        self.pw2.updateImage()
-        self.pw3.data = self.sig - self.bg
-        self.pw3.updateImage()
-        for window in self._windows:
-            window.data = self.sig
 
 def main():
     app = QtGui.QApplication([])
