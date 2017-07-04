@@ -65,6 +65,7 @@ class Worker(QObject):
                 # self.stopWorking = True
         self.do_something.emit(self.data)
         elapsed = time.time() - st
+        print("Elapsed time of process:{0:.4f} sec.".format(elapsed))
         if elapsed < self.sleepInterval:
             time.sleep(self.sleepInterval - elapsed)
         self.finished.emit()
@@ -100,7 +101,7 @@ class GetDataWorker(Worker):
         super().__init__(name=name, parent=parent)
 
     def _process(self):
-        self.data = np.random.uniform(0.0, 10., (1000, 2000))
+        self.data = np.random.uniform(0.0, 10., (100, 200))
         # self.stopWorking = True
 
 class Worker_Sample(QObject):

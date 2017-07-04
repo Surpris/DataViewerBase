@@ -7,6 +7,7 @@ Created on Thu Jun 22 23:22:08 2017
 
 import sys
 import inspect
+import time
 import os
 import json
 import datetime
@@ -39,6 +40,7 @@ class DataViewerBase(QMainWindow):
         self.initInnerParameters()
         self.initGui()
         self.initGetDataProcess()
+        self.initUpdateImageProcess()
         self.initCheckWindowProcess()
     
     @footprint
@@ -48,17 +50,20 @@ class DataViewerBase(QMainWindow):
         """
         self._mutex = QMutex()
         self._windows = []
-        self.sig = None
-        self.bg = None
+        self.sig = np.zeros((100, 100))
+        self.bg = np.zeros((100, 100))
+        self._isUpdatingImage = False
         self._font_size_button = 16 # [pixel]
         self._font_size_groupbox_title = 12 # [pixel]
         self._font_size_label = 11 # [pixel]
         self._init_window_width = 1400 # [pixel]
         self._init_window_height = 700 # [pixel]
 
-        self._get_data_interval = 1000 # [msec]
-        self._check_window_interval = 1000 # [msec]
+        self._get_data_interval = 2000 # [msec]
+        self._get_data_worker_sleep_interval = self._get_data_interval/1000.0 - 0.1 # [sec]
         self._update_image_interval = 2000 # [msec]
+        self.get_update_delay = 1000 # [msec]
+        self._check_window_interval = 1000 # [msec]
 
         self._currentDir = os.path.dirname(__file__)
         self._emulate = True
@@ -378,28 +383,28 @@ class DataViewerBase(QMainWindow):
     @pyqtSlot()
     def runMainProcess(self):
         if not self._timer_getData.isActive():
+            self.sig = np.zeros((100, 100))
+            self.bg = np.zeros((100, 100))
             self._timer_getData.start()
             self.brun.setText("Stop")
+            if not self._timer_updImage.isActive():
+                time.sleep(self.get_update_delay/1000.0)
+                self._timer_updImage.start()
         else:
             self.brun.setEnabled(False)
             self.stopTimer = True
-    
-    # @pyqtSlot()
-    # def mainProcess(self):
-    #     if self._emulate:
-    #         self.updateEmulateData()
-    #     else:
-    #         pass
 
 ######################## GetDataProcess ########################
     
     @footprint
     def initGetDataProcess(self):
         self._timer_getData = QTimer()
-        self._timer_getData.setInterval(1000)
+        self._timer_getData.setInterval(self._get_data_interval)
         self.stopTimer = False
         self._thread_getData = QThread()
+        # if self._emulate:
         self._worker_getData = GetDataWorker()
+        self._worker_getData.sleepInterval = self._get_data_worker_sleep_interval
         
         # Start.
         self._timer_getData.timeout.connect(self.startGettingDataThread)
@@ -423,12 +428,8 @@ class DataViewerBase(QMainWindow):
     @pyqtSlot(object)
     def updateData(self, obj):
         if self._isUpdatingImage is False: # In case.
-            if self._emulate:
-                self.updateEmulateData()
-            else:
-                print(obj.shape)
-                self.sig = obj.copy()
-                self.bg = obj.copy()
+            self.sig = obj.copy()
+            self.bg = obj.copy()
 
     @footprint
     @pyqtSlot()
@@ -446,22 +447,27 @@ class DataViewerBase(QMainWindow):
     @footprint
     def initUpdateImageProcess(self):
         self._timer_updImage = QTimer()
-        self._timer_updImage.setInterval(2000)
+        self._timer_updImage.setInterval(self._update_image_interval)
         self._timer_updImage.timeout.connect(self.updateImage)
     
     @footprint
     def updateImage(self):
         self._isUpdatingImage = True
-        with QMutexLocker(self._mutex):
-            self.pw1.data = self.sig
-            self.pw1.updateImage()
-            self.pw2.data = self.bg
-            self.pw2.updateImage()
-            self.pw3.data = self.sig - self.bg
-            self.pw3.updateImage()
-            for window in self._windows:
-                window.data = self.sig
+        try:
+            with QMutexLocker(self._mutex):
+                self.pw1.data = self.sig
+                self.pw2.data = self.bg
+                self.pw3.data = self.sig - self.bg
+                for window in self._windows:
+                    if not window.is_closed:
+                        window.data = self.sig
+        except Exception as ex:
+            print(ex)
         self._isUpdatingImage = False
+        
+        self.pw1.updateImage()
+        self.pw2.updateImage()
+        self.pw3.updateImage()
     
 ######################## CheckWindowProcess ########################
 
@@ -471,7 +477,7 @@ class DataViewerBase(QMainWindow):
         Initialize checkWindow process.
         """
         self._timer_checkWindow = QTimer()
-        self._timer_checkWindow.setInterval(1000)
+        self._timer_checkWindow.setInterval(self._check_window_interval)
         self._timer_checkWindow.timeout.connect(self.checkWindow)
         self._timer_checkWindow.start()
     
@@ -511,10 +517,7 @@ class DataViewerBase(QMainWindow):
                 self.makeConfig()
                 with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                     json.dump(self.config, ff)
-                if self._timer_checkWindow.isActive():
-                    print("Stop checkWindow timer...")
-                    self._timer_checkWindow.stop()
-                    print("checkWindow timer stopped.")
+                self.stopAllTimers()
                 event.accept()
             else:
                 event.ignore()
@@ -522,10 +525,16 @@ class DataViewerBase(QMainWindow):
             self.makeConfig()
             with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                 json.dump(self.config, ff, indent=4)
-            if self._timer_checkWindow.isActive():
-                print("Stop checkWindow timer...")
-                self._timer_checkWindow.stop()
-                print("checkWindow timer stopped.")
+            self.stopAllTimers()
+
+    @footprint
+    def stopAllTimers(self):
+        if self._timer_getData.isActive():
+            self._timer_getData.stop()
+        if self._timer_updImage.isActive():
+            self._timer_updImage.stop()
+        if self._timer_checkWindow.isActive():
+            self._timer_checkWindow.stop()
     
     @footprint
     def makeConfig(self):
