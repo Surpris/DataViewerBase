@@ -50,11 +50,15 @@ class DataViewerBase(QMainWindow):
         self._windows = []
         self.sig = None
         self.bg = None
-        self._font_size_button = 16
-        self._font_size_groupbox_title = 12
-        self._font_size_label = 11
-        self._init_window_width = 1400
-        self._init_window_height = 700
+        self._font_size_button = 16 # [pixel]
+        self._font_size_groupbox_title = 12 # [pixel]
+        self._font_size_label = 11 # [pixel]
+        self._init_window_width = 1400 # [pixel]
+        self._init_window_height = 700 # [pixel]
+
+        self._get_data_interval = 1000 # [msec]
+        self._check_window_interval = 1000 # [msec]
+        self._update_image_interval = 2000 # [msec]
 
         self._currentDir = os.path.dirname(__file__)
         self._emulate = True
@@ -404,7 +408,7 @@ class DataViewerBase(QMainWindow):
 
         # Finish.
         self._worker_getData.finished.connect(self._thread_getData.quit)
-        self._thread_getData.finished.connect(self.checkTimerGettingData)
+        self._thread_getData.finished.connect(self.checkIsTimerStopped)
     
     @footprint
     @pyqtSlot()
@@ -418,16 +422,36 @@ class DataViewerBase(QMainWindow):
     @footprint
     @pyqtSlot(object)
     def updateData(self, obj):
-        if self._emulate:
-            self.updateEmulateData()
-        else:
-            print(obj.shape)
-        #     self.sig = obj.copy()
-        #     self.bg = obj.copy()
-        # self.updateImage()
+        if self._isUpdatingImage is False: # In case.
+            if self._emulate:
+                self.updateEmulateData()
+            else:
+                print(obj.shape)
+                self.sig = obj.copy()
+                self.bg = obj.copy()
+
+    @footprint
+    @pyqtSlot()
+    def checkIsTimerStopped(self):
+        if self.stopTimer:
+            self._timer_getData.stop()
+            self._timer_updImage.stop()
+            print("timer stopped.")
+            self.stopTimer = False
+            self.brun.setEnabled(True)
+            self.brun.setText("Start")
+
+######################## updateImageProcess ########################
+
+    @footprint
+    def initUpdateImageProcess(self):
+        self._timer_updImage = QTimer()
+        self._timer_updImage.setInterval(2000)
+        self._timer_updImage.timeout.connect(self.updateImage)
     
     @footprint
     def updateImage(self):
+        self._isUpdatingImage = True
         with QMutexLocker(self._mutex):
             self.pw1.data = self.sig
             self.pw1.updateImage()
@@ -437,17 +461,8 @@ class DataViewerBase(QMainWindow):
             self.pw3.updateImage()
             for window in self._windows:
                 window.data = self.sig
-
-    @footprint
-    @pyqtSlot()
-    def checkTimerGettingData(self):
-        if self.stopTimer:
-            self._timer_getData.stop()
-            print("timer stopped.")
-            self.stopTimer = False
-            self.brun.setEnabled(True)
-            self.brun.setText("Start")
-
+        self._isUpdatingImage = False
+    
 ######################## CheckWindowProcess ########################
 
     @footprint

@@ -45,23 +45,28 @@ class Worker(QObject):
         self.mutex = QMutex()
         self.name = name
         self.data = None
-        self.StopWorking = False
+        self.stopWorking = False
+        self.sleepInterval = 1
 
     @pyqtSlot()
     def process(self):
         """
         This function is to be connected with a pyqtSignal object on another thread.
         """
-        print(">> process():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
-        self.StopWorking = False
-        while not self.StopWorking:
-            try:
-                with QMutexLocker(self.mutex):
-                    self._process()
-            except Exception as ex:
-                print(ex)
-                self.StopWorking = True
+        # print(">> process():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
+        # self.stopWorking = False
+        # while not self.stopWorking:
+        st = time.time()
+        try:
+            with QMutexLocker(self.mutex):
+                self._process()
+        except Exception as ex:
+            print(ex)
+                # self.stopWorking = True
         self.do_something.emit(self.data)
+        elapsed = time.time() - st
+        if elapsed < self.sleepInterval:
+            time.sleep(self.sleepInterval - elapsed)
         self.finished.emit()
 
     @pyqtSlot(object)
@@ -70,14 +75,14 @@ class Worker(QObject):
         This function stops the thread calling this object.
         """
         print(">> process():", os.getpid(), QThread.currentThread(), QThread.currentThreadId())
-        self.StopWorking = False
-        while not self.StopWorking:
+        self.stopWorking = False
+        while not self.stopWorking:
             try:
                 with QMutexLocker(self.mutex):
                     self._process()
             except Exception as ex:
                 print(ex)
-                self.StopWorking = True
+                self.stopWorking = True
         self.do_something.emit(self.data)
         self.finished.emit()
 
@@ -91,15 +96,12 @@ class Worker(QObject):
         self.isStopped = True
 
 class GetDataWorker(Worker):
-    sendData = pyqtSignal(object)
-
     def __init__(self, name = "", parent = None):
         super().__init__(name=name, parent=parent)
 
     def _process(self):
         self.data = np.random.uniform(0.0, 10., (1000, 2000))
-        time.sleep(0.5)
-        self.StopWorking = True
+        # self.stopWorking = True
 
 class Worker_Sample(QObject):
     do_something = pyqtSignal(object)
