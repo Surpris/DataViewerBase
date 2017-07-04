@@ -66,8 +66,8 @@ class Worker(QObject):
         self.do_something.emit(self.data)
         elapsed = time.time() - st
         print("Elapsed time of process:{0:.4f} sec.".format(elapsed))
-        if elapsed < self.sleepInterval:
-            time.sleep(self.sleepInterval - elapsed)
+        # if elapsed < self.sleepInterval:
+        #     time.sleep(self.sleepInterval - elapsed)
         self.finished.emit()
 
     @pyqtSlot(object)
