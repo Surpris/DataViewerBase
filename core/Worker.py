@@ -101,7 +101,7 @@ class GetDataWorker(Worker):
         super().__init__(name=name, parent=parent)
 
     def _process(self):
-        self.data = np.random.uniform(0.0, 10., (100, 200))
+        self.data = np.random.uniform(0.0, 10., (1000, 2000))
         # self.stopWorking = True
 
 class Worker_Sample(QObject):

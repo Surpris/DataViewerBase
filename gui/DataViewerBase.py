@@ -13,6 +13,7 @@ import json
 import datetime
 from collections import OrderedDict
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget, QLabel, QTextList, QLineEdit
+from PyQt4.QtGui import QSpinBox, QDoubleSpinBox
 from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
 from PyQt4.QtGui import QStyle, QPalette, QColor
 from PyQt4.QtCore import pyqtSlot, QThread, QTimer, Qt, QMutex
@@ -56,14 +57,15 @@ class DataViewerBase(QMainWindow):
         self._font_size_button = 16 # [pixel]
         self._font_size_groupbox_title = 12 # [pixel]
         self._font_size_label = 11 # [pixel]
+        self._font_bold_label = True
         self._init_window_width = 1400 # [pixel]
         self._init_window_height = 700 # [pixel]
 
-        self._get_data_interval = 2000 # [msec]
-        self._get_data_worker_sleep_interval = self._get_data_interval/1000.0 - 0.1 # [sec]
-        self._update_image_interval = 2000 # [msec]
-        self.get_update_delay = 1000 # [msec]
-        self._check_window_interval = 1000 # [msec]
+        self._get_data_interval = 1 # [sec]
+        self._get_data_worker_sleep_interval = self._get_data_interval - 0.1 # [sec]
+        self._update_image_interval = 2 # [sec]
+        self.get_update_delay = 1 # [sec]
+        self._check_window_interval = 1 # [sec]
 
         self._currentDir = os.path.dirname(__file__)
         self._emulate = True
@@ -102,6 +104,9 @@ class DataViewerBase(QMainWindow):
         if config.get("font_size_label") is not None:
             if isinstance(config.get("font_size_label"), int):
                 self._font_size_label = config["font_size_label"]
+        if config.get("font_bold_label") is not None:
+            if isinstance(config.get("font_bold_label"), bool):
+                self._font_bold_label = config["font_bold_label"]
     
     @footprint
     def initGui(self):
@@ -127,8 +132,10 @@ class DataViewerBase(QMainWindow):
         # Run No.
         label_run = QLabel(self)
         label_run.setText("Run No. : ")
+        label_run.setAlignment(Qt.AlignRight)
         font = label_run.font()
         font.setPointSize(self._font_size_label)
+        font.setBold(self._font_bold_label)
         label_run.setFont(font)
         
         self.label_run_number = QLabel(self)
@@ -144,8 +151,10 @@ class DataViewerBase(QMainWindow):
         # Tag No.
         label_tag = QLabel(self)
         label_tag.setText("Tag No. : ")
+        label_tag.setAlignment(Qt.AlignRight)
         font = label_tag.font()
         font.setPointSize(self._font_size_label)
+        font.setBold(self._font_bold_label)
         label_tag.setFont(font)
 
         self.label_tag_start = QLabel(self)
@@ -160,6 +169,7 @@ class DataViewerBase(QMainWindow):
         label_tag_hyphen.setFixedWidth(30)
         font = label_tag_hyphen.font()
         font.setPointSize(self._font_size_label)
+        font.setBold(self._font_bold_label)
         label_tag_hyphen.setFont(font)
 
         self.label_tag_end = QLabel(self)
@@ -171,9 +181,11 @@ class DataViewerBase(QMainWindow):
 
         # Sig / BG.
         label_sig = QLabel(self)
-        label_sig.setText("Sig # : ")
+        label_sig.setText("# of Sig : ")
+        label_sig.setAlignment(Qt.AlignRight)
         font = label_sig.font()
         font.setPointSize(self._font_size_label)
+        font.setBold(self._font_bold_label)
         label_sig.setFont(font)
 
         self.label_sig_number = QLabel(self)
@@ -184,9 +196,11 @@ class DataViewerBase(QMainWindow):
         self.label_sig_number.setFont(font)
 
         label_bg = QLabel(self)
-        label_bg.setText("BG # : ")
+        label_bg.setText("# of BG : ")
+        label_bg.setAlignment(Qt.AlignRight)
         font = label_bg.font()
         font.setPointSize(self._font_size_label)
+        font.setBold(self._font_bold_label)
         label_bg.setFont(font)
 
         self.label_bg_number = QLabel(self)
@@ -224,26 +238,28 @@ class DataViewerBase(QMainWindow):
         label_upd_rate.setText("Upd. interval: ")
         font = label_upd_rate.font()
         font.setPointSize(self._font_size_label)
+        font.setBold(self._font_bold_label)
         label_upd_rate.setFont(font)
         
-        self.textbox_upd_rate = QLineEdit(self)
-        self.textbox_upd_rate.setText("1")
-        self.textbox_upd_rate.setFixedWidth(60)
-        self.textbox_upd_rate.setAlignment(Qt.AlignRight)
-        font = self.textbox_upd_rate.font()
+        self.spinbox_get_data_interval = QDoubleSpinBox(self)
+        self.spinbox_get_data_interval.setValue(self._get_data_interval)
+        self.spinbox_get_data_interval.setFixedWidth(100)
+        self.spinbox_get_data_interval.setAlignment(Qt.AlignRight)
+        font = self.spinbox_get_data_interval.font()
         font.setBold(True)
         font.setPointSize(self._font_size_label)
-        self.textbox_upd_rate.setFont(font)
+        self.spinbox_get_data_interval.setFont(font)
 
         label_upd_rate_unit = QLabel(self)
         label_upd_rate_unit.setText("sec")
         font = label_upd_rate_unit.font()
         font.setPointSize(self._font_size_label)
+        font.setBold(self._font_bold_label)
         label_upd_rate_unit.setFont(font)
 
         # Construct the layout.
         grid_settings.addWidget(label_upd_rate, 0, 0, 1, 3)
-        grid_settings.addWidget(self.textbox_upd_rate, 0, 3)
+        grid_settings.addWidget(self.spinbox_get_data_interval, 0, 3)
         grid_settings.addWidget(label_upd_rate_unit, 0, 4)
 
         ### Function buttons.
@@ -413,10 +429,13 @@ class DataViewerBase(QMainWindow):
         if not self._timer_getData.isActive():
             self.sig = np.zeros((100, 100))
             self.bg = np.zeros((100, 100))
+            self._get_data_interval = self.spinbox_get_data_interval.value()
+            self._timer_getData.setInterval(int(self._get_data_interval*1000))
+            self.spinbox_get_data_interval.setEnabled(False)
             self._timer_getData.start()
             self.brun.setText("Stop")
             if not self._timer_updImage.isActive():
-                time.sleep(self.get_update_delay/1000.0)
+                time.sleep(self.get_update_delay)
                 self._timer_updImage.start()
         else:
             self.brun.setEnabled(False)
@@ -427,7 +446,7 @@ class DataViewerBase(QMainWindow):
     @footprint
     def initGetDataProcess(self):
         self._timer_getData = QTimer()
-        self._timer_getData.setInterval(self._get_data_interval)
+        self._timer_getData.setInterval(int(self._get_data_interval*1000))
         self.stopTimer = False
         self._thread_getData = QThread()
         # if self._emulate:
@@ -469,13 +488,14 @@ class DataViewerBase(QMainWindow):
             self.stopTimer = False
             self.brun.setEnabled(True)
             self.brun.setText("Start")
+            self.spinbox_get_data_interval.setEnabled(True)
 
 ######################## updateImageProcess ########################
 
     @footprint
     def initUpdateImageProcess(self):
         self._timer_updImage = QTimer()
-        self._timer_updImage.setInterval(self._update_image_interval)
+        self._timer_updImage.setInterval(int(self._update_image_interval*1000))
         self._timer_updImage.timeout.connect(self.updateImage)
     
     @footprint
@@ -505,7 +525,7 @@ class DataViewerBase(QMainWindow):
         Initialize checkWindow process.
         """
         self._timer_checkWindow = QTimer()
-        self._timer_checkWindow.setInterval(self._check_window_interval)
+        self._timer_checkWindow.setInterval(int(self._check_window_interval*1000))
         self._timer_checkWindow.timeout.connect(self.checkWindow)
         self._timer_checkWindow.start()
     
@@ -577,14 +597,6 @@ class DataViewerBase(QMainWindow):
             ("font_size_button", self._font_size_button),
             ("font_size_label", self._font_size_label),
             ("font_size_groupbox_title", self._font_size_groupbox_title)])
-
-
- ######################## Emulation functions ########################
-    
-    @footprint
-    def updateEmulateData(self):
-        self.sig = np.random.normal(100, 10, (100, 100))
-        self.bg = np.random.normal(100, 10, (100, 100))
 
 def main():
     app = QtGui.QApplication([])
