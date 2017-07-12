@@ -51,8 +51,7 @@ class DataViewerBase(QMainWindow):
         """
         self._mutex = QMutex()
         self._windows = []
-        self.sig = np.zeros((100, 100))
-        self.bg = np.zeros((100, 100))
+        self.initData()
         self._isUpdatingImage = False
         self._font_size_button = 16 # [pixel]
         self._font_size_groupbox_title = 12 # [pixel]
@@ -74,6 +73,16 @@ class DataViewerBase(QMainWindow):
 
         if os.path.exists(os.path.join(os.path.dirname(__file__), "config.json")):
             self.loadConfig()
+        
+    @footprint
+    def initData(self):
+        """
+        Initialize inner data.
+        """
+        self.sig = np.zeros((100, 100))
+        self.bg = np.zeros((100, 100))
+        self.nbr_of_sig = 0
+        self.nbr_of_bg = 0
     
     @footprint
     def loadConfig(self):
@@ -188,12 +197,12 @@ class DataViewerBase(QMainWindow):
         font.setBold(self._font_bold_label)
         label_sig.setFont(font)
 
-        self.label_sig_number = QLabel(self)
-        self.label_sig_number.setText("None")
-        font = self.label_sig_number.font()
+        self.label_nbr_of_sig = QLabel(self)
+        self.label_nbr_of_sig.setText("None")
+        font = self.label_nbr_of_sig.font()
         font.setBold(True)
         font.setPointSize(self._font_size_label)
-        self.label_sig_number.setFont(font)
+        self.label_nbr_of_sig.setFont(font)
 
         label_bg = QLabel(self)
         label_bg.setText("# of BG : ")
@@ -203,12 +212,12 @@ class DataViewerBase(QMainWindow):
         font.setBold(self._font_bold_label)
         label_bg.setFont(font)
 
-        self.label_bg_number = QLabel(self)
-        self.label_bg_number.setText("None")
-        font = self.label_bg_number.font()
+        self.label_nbr_of_bg = QLabel(self)
+        self.label_nbr_of_bg.setText("None")
+        font = self.label_nbr_of_bg.font()
         font.setBold(True)
         font.setPointSize(self._font_size_label)
-        self.label_bg_number.setFont(font)
+        self.label_nbr_of_bg.setFont(font)
 
         # Construct the layout.
         grid_runinfo.addWidget(label_run, 0, 0)
@@ -220,9 +229,9 @@ class DataViewerBase(QMainWindow):
         grid_runinfo.addWidget(self.label_tag_end, 1, 3)
 
         grid_runinfo.addWidget(label_sig, 2, 0)
-        grid_runinfo.addWidget(self.label_sig_number, 2, 1)
+        grid_runinfo.addWidget(self.label_nbr_of_sig, 2, 1)
         grid_runinfo.addWidget(label_bg, 2, 2)
-        grid_runinfo.addWidget(self.label_bg_number, 2, 3)
+        grid_runinfo.addWidget(self.label_nbr_of_bg, 2, 3)
 
         ### Settings.
         group_settings = QGroupBox(self)
@@ -427,8 +436,7 @@ class DataViewerBase(QMainWindow):
     @pyqtSlot()
     def runMainProcess(self):
         if not self._timer_getData.isActive():
-            self.sig = np.zeros((100, 100))
-            self.bg = np.zeros((100, 100))
+            self.initData()
             self._get_data_interval = self.spinbox_get_data_interval.value()
             self._timer_getData.setInterval(int(self._get_data_interval*1000))
             self.spinbox_get_data_interval.setEnabled(False)
@@ -449,8 +457,7 @@ class DataViewerBase(QMainWindow):
         self._timer_getData.setInterval(int(self._get_data_interval*1000))
         self.stopTimer = False
         self._thread_getData = QThread()
-        # if self._emulate:
-        self._worker_getData = GetDataWorker()
+        self._worker_getData = GetDataWorker2()
         self._worker_getData.sleepInterval = self._get_data_worker_sleep_interval
         
         # Start.
@@ -461,6 +468,9 @@ class DataViewerBase(QMainWindow):
         # Finish.
         self._worker_getData.finished.connect(self._thread_getData.quit)
         self._thread_getData.finished.connect(self.checkIsTimerStopped)
+
+        # Move.
+        self._worker_getData.moveToThread(self._thread_getData)
     
     @footprint
     @pyqtSlot()
@@ -475,8 +485,19 @@ class DataViewerBase(QMainWindow):
     @pyqtSlot(object)
     def updateData(self, obj):
         if self._isUpdatingImage is False: # In case.
-            self.sig = obj.copy()
-            self.bg = obj.copy()
+            if obj is not None:
+                self.sig = obj.get("sig")
+                self.sig = obj.get("bg")
+                
+                self.label_run_number.setText(str(obj.get("run_number")))
+                if self.nbr_of_sig == 0:
+                    self.label_tag_start.setText(str(obj.get("tag_start")))
+                self.label_tag_end.setText(str(obj.get("tag_end")))
+
+                self.nbr_of_sig += obj.get("nbr_of_sig")
+                self.nbr_of_bg += obj.get("nbr_of_bg")
+                self.label_nbr_of_sig.setText(str(self.nbr_of_sig))
+                self.label_nbr_of_bg.setText(str(self.nbr_of_bg))
 
     @footprint
     @pyqtSlot()

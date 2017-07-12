@@ -104,6 +104,25 @@ class GetDataWorker(Worker):
         self.data = np.random.uniform(0.0, 10., (1000, 2000))
         # self.stopWorking = True
 
+class GetDataWorker2(Worker):
+    def __init__(self, name = "", parent = None):
+        super().__init__(name=name, parent=parent)
+
+    def _process(self):
+        try:
+            run_number = np.random.randint(0, 2000)
+            tag_start = np.random.randint(0, 1000000)
+            tag_end = tag_start + np.random.randint(0, 100)
+            nbr_of_sig = int((tag_end - tag_start + 1)/3)
+            nbr_of_bg = (tag_end - tag_start + 1) - nbr_of_sig
+            bg = np.random.uniform(0.0, 10., (1000, 2000))
+            sig = np.random.uniform(0.0, 10., (1000, 2000))
+            self.data = dict(tag_start=tag_start, tag_end=tag_end, run_number=run_number,
+                         nbr_of_sig=nbr_of_sig, nbr_of_bg=nbr_of_bg, bg=bg, sig=sig)
+        except Exception as e:
+            print(e)
+            self.data = None
+
 class Worker_Sample(QObject):
     do_something = pyqtSignal(object)
     finished = pyqtSignal()
