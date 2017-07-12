@@ -79,8 +79,8 @@ class DataViewerBase(QMainWindow):
         """
         Initialize inner data.
         """
-        self.sig = np.zeros((100, 100))
-        self.bg = np.zeros((100, 100))
+        self.sig = None
+        self.bg =None
         self.nbr_of_sig = 0
         self.nbr_of_bg = 0
     
@@ -486,9 +486,13 @@ class DataViewerBase(QMainWindow):
     def updateData(self, obj):
         if self._isUpdatingImage is False: # In case.
             if obj is not None:
-                self.sig = obj.get("sig")
-                self.sig = obj.get("bg")
-                
+                if self.sig is None or self.bg is None:
+                    self.sig = obj.get("sig")
+                    self.bg = obj.get("bg")
+                else:
+                    self.sig += obj.get("sig")
+                    self.bg += obj.get("bg")
+                    
                 self.label_run_number.setText(str(obj.get("run_number")))
                 if self.nbr_of_sig == 0:
                     self.label_tag_start.setText(str(obj.get("tag_start")))

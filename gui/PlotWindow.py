@@ -12,8 +12,9 @@ import json
 import time
 import datetime
 import numpy as np
-from PyQt4.QtGui import QGridLayout, QDialog, QPushButton, QLabel, QGroupBox, QCheckBox
-from PyQt4.QtCore import pyqtSlot
+from PyQt4.QtGui import QGridLayout, QDialog, QPushButton, QLabel, QGroupBox, QCheckBox, QHBoxLayout
+from PyQt4.QtGui import QWidget
+from PyQt4.QtCore import pyqtSlot, Qt
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
@@ -48,27 +49,26 @@ class PlotWindow(QDialog):
         self._timer = QtCore.QTimer()
         self._is_emulate = False
         self.data = None
-        self._subplot_size = 100
-        self._font_size_groupbox_title = 12
+        self._init_window_width = 600 # [pixel]
+        self._init_window_height = 600 # [pixel]
+        self._subplot_size = 100 # [pixel]
+        self._font_size_groupbox_title = 11 # [pixel]
     
     @footprint
     def initGui(self):
         """
         Initialize the GUI.
         """
-        self.resize(600, 600)
+        self.resize(self._init_window_width, self._init_window_height)
         grid = QGridLayout(self)
         grid.setSpacing(10)
 
         ### Functions.
         group_func = QGroupBox(self)
-        # group_func.setTitle("Functions")
         font = group_func.font()
         font.setPointSize(self._font_size_groupbox_title)
         group_func.setFont(font)
         group_func.resize(400, 100)
-        grid.addWidget(group_func, 0, 0)
-
         grid_func = QGridLayout(group_func)
         grid_func.setSpacing(10)
 
@@ -78,19 +78,54 @@ class PlotWindow(QDialog):
             self.bp = QPushButton(group_func)
             self.bp.setText("Start plotting")
             self.bp.clicked.connect(self.pushButton)
-            grid_func.addWidget(self.bp, 0, 0, 1, 1)
-
+            
         # Some options.
         label_logscale = QLabel(group_func)
         label_logscale.setText("Log")
-        grid_func.addWidget(label_logscale, 0, 1)
-
+        
         self.checkbox_logscale = QCheckBox(group_func)
-        grid_func.addWidget(self.checkbox_logscale, 0, 2)
 
+        # Construct.
+        if self._is_bp:
+            grid_func.addWidget(self.bp, 0, 0, 1, 1)
+        grid_func.addWidget(label_logscale, 0, 1)
+        grid_func.addWidget(self.checkbox_logscale, 0, 2)
+        
+        ### Coordinate and Value of the mouse pointer.
+        widget_coor_value = QWidget(self)
+        widget_coor_value.resize(self._init_window_width, 30)
+        grid_coor_value = QGridLayout(widget_coor_value)
+        grid_coor_value.setSpacing(10)
+
+        label_coor_value = QLabel(self)
+        label_coor_value.setText("Coor, Value:")
+        label_coor_value.setAlignment(Qt.AlignRight)
+        # label_coor_value.setFixedWidth(120)
+        font = label_coor_value.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        font.setBold(True)
+        label_coor_value.setFont(font)
+
+        self.label_coor_value = QLabel(self)
+        # self.label_coor_value.setFixedSize(200, 30)
+        self.label_coor_value.setText("")
+        font = self.label_coor_value.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        font.setBold(True)
+        self.label_coor_value.setFont(font)
+
+        # Construct.
+        grid_coor_value.addWidget(label_coor_value, 0, 0)
+        grid_coor_value.addWidget(self.label_coor_value, 0, 1, 1, 3)
+
+        
         ### Plotting area.
         self.initPlotArea()
-        grid.addWidget(self.glw, 1, 0)
+
+        ### Construct the layout.
+        grid.addWidget(group_func, 0, 0)
+        grid.addWidget(widget_coor_value, 1, 0)
+        grid.addWidget(self.glw, 2, 0)
 
     @footprint
     def initPlotArea(self):
@@ -99,7 +134,7 @@ class PlotWindow(QDialog):
         """
         # Construct the graphic layout.
         self.glw = pg.GraphicsLayoutWidget()
-        self.glw.resize(600, 600)
+        self.glw.resize(self._init_window_width, self._init_window_height)
 
         # Plot area for x-projection.
         self._is_px = self.kwargs.get("px", True)
@@ -109,13 +144,18 @@ class PlotWindow(QDialog):
 
         # Plot area for the image.
         p1 = self.glw.addPlot()
+        p1.setAspectLocked(True)
         self.iw = pg.ImageItem()
         p1.addItem(self.iw)
 
         def mouseMoved(pos):
             try:
-                # pos = event.pos()
-                print("Image position:", self.iw.mapFromScene(pos))
+                coor = self.iw.mapFromScene(pos)
+                x, y = int(coor.x()), int(coor.y())
+                if self.iw.image is not None:
+                    img = self.iw.image
+                    if 0 <= x <= img.shape[1] and 0 <= y <= img.shape[0]:
+                        self.label_coor_value.setText("({0}, {1}, {2:.2e})".format(x, y, img[y, x]))
             except Exception as ex:
                 print(ex)
         
