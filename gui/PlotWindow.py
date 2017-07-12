@@ -112,6 +112,15 @@ class PlotWindow(QDialog):
         self.iw = pg.ImageItem()
         p1.addItem(self.iw)
 
+        def mouseMoved(pos):
+            try:
+                # pos = event.pos()
+                print("Image position:", self.iw.mapFromScene(pos))
+            except Exception as ex:
+                print(ex)
+        
+        self.iw.scene().sigMouseMoved.connect(mouseMoved)
+
         # Contrast/color control
         hist = pg.HistogramLUTItem()
         hist.setImageItem(self.iw)
@@ -132,6 +141,7 @@ class PlotWindow(QDialog):
         if self._is_py:
             self.py = self.glw.addPlot()
             self.py.setMaximumHeight(self._subplot_size)
+
 
     @footprint
     @pyqtSlot()
