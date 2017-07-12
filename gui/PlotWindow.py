@@ -12,7 +12,7 @@ import json
 import time
 import datetime
 import numpy as np
-from PyQt4.QtGui import QGridLayout, QDialog, QPushButton
+from PyQt4.QtGui import QGridLayout, QDialog, QPushButton, QLabel, QGroupBox, QCheckBox
 from PyQt4.QtCore import pyqtSlot
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtCore
@@ -49,6 +49,7 @@ class PlotWindow(QDialog):
         self._is_emulate = False
         self.data = None
         self._subplot_size = 100
+        self._font_size_groupbox_title = 12
     
     @footprint
     def initGui(self):
@@ -56,20 +57,40 @@ class PlotWindow(QDialog):
         Initialize the GUI.
         """
         self.resize(600, 600)
-        self.grid = QGridLayout(self)
-        self.grid.setSpacing(10)
+        grid = QGridLayout(self)
+        grid.setSpacing(10)
 
-        ## Some buttons.
+        ### Functions.
+        group_func = QGroupBox(self)
+        # group_func.setTitle("Functions")
+        font = group_func.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        group_func.setFont(font)
+        group_func.resize(400, 100)
+        grid.addWidget(group_func, 0, 0)
+
+        grid_func = QGridLayout(group_func)
+        grid_func.setSpacing(10)
+
+        # Some buttons.
         self._is_bp = self.kwargs.get("bp", True)
         if self._is_bp:
-            self.bp = QPushButton()
+            self.bp = QPushButton(group_func)
             self.bp.setText("Start plotting")
             self.bp.clicked.connect(self.pushButton)
-            self.grid.addWidget(self.bp, 0, 0, 1, 1)
+            grid_func.addWidget(self.bp, 0, 0, 1, 1)
 
-        ## Plotting area.
+        # Some options.
+        label_logscale = QLabel(group_func)
+        label_logscale.setText("Log")
+        grid_func.addWidget(label_logscale, 0, 1)
+
+        self.checkbox_logscale = QCheckBox(group_func)
+        grid_func.addWidget(self.checkbox_logscale, 0, 2)
+
+        ### Plotting area.
         self.initPlotArea()
-        self.grid.addWidget(self.glw, 1, 0)
+        grid.addWidget(self.glw, 1, 0)
 
     @footprint
     def initPlotArea(self):

@@ -248,7 +248,7 @@ class DataViewerBase(QMainWindow):
 
         ### Function buttons.
         group_func = QGroupBox(self)
-        group_func.setTitle("Setting")
+        group_func.setTitle("Function")
         font = group_func.font()
         font.setPointSize(self._font_size_groupbox_title)
         group_func.setFont(font)
@@ -279,18 +279,46 @@ class DataViewerBase(QMainWindow):
         box_func.addWidget(bwindow)
 
         ### Plotting area.
+        grp1 = QGroupBox(self)
+        grp1.setTitle("Signal")
+        font = grp1.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        grp1.setFont(font)
+        gp1 = QGridLayout(grp1)
+        gp1.setSpacing(10)
+
+        grp2 = QGroupBox(self)
+        grp2.setTitle("BG")
+        font = grp2.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        grp2.setFont(font)
+        gp2 = QGridLayout(grp2)
+        gp2.setSpacing(10)
+
+        grp3 = QGroupBox(self)
+        grp3.setTitle("Sub")
+        font = grp3.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        grp3.setFont(font)
+        gp3 = QGridLayout(grp3)
+        gp3.setSpacing(30)
+
         kwargs = dict(px=False, py=False, ph=False, bp=False)
         self.pw1 = PlotWindow(self, **kwargs)
         self.pw2 = PlotWindow(self, **kwargs)
         self.pw3 = PlotWindow(self, **kwargs)
 
+        gp1.addWidget(self.pw1, 0, 0)
+        gp2.addWidget(self.pw2, 0, 0)
+        gp3.addWidget(self.pw3, 0, 0)
+
         ### Construct the layout.
         self.grid.addWidget(group_runinfo, 0, 0)
         self.grid.addWidget(group_settings, 0, 1)
         self.grid.addWidget(group_func, 0, 2)
-        self.grid.addWidget(self.pw1, 1, 0, 2, 1)
-        self.grid.addWidget(self.pw2, 1, 1, 2, 1)
-        self.grid.addWidget(self.pw3, 1, 2, 2, 1)
+        self.grid.addWidget(grp1, 1, 0, 2, 1)
+        self.grid.addWidget(grp2, 1, 1, 2, 1)
+        self.grid.addWidget(grp3, 1, 2, 2, 1)
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
     
