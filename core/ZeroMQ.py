@@ -25,6 +25,13 @@ class ZMQPublisher(object):
         context = zmq.Context()
         self.socket = context.socket(zmq.PUB)
         self.socket.bind("tcp://*:{}".format(port))
+    
+    def sendString(self, string, name="", flags=0, copy=True, track=False):
+        """
+        send a string with metadata
+        """
+        self.socket.send(name.encode(), flags|zmq.SNDMORE)
+        self.socket.send(string.encode(), flags|zmq.SNDMORE, copy=copy, track=track)
 
     def SendArray(self, A, name="", flags=0, copy=True, track=False):
         """
