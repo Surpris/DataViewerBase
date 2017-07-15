@@ -12,6 +12,8 @@ import time
 import datetime
 import numpy as np
 import zmq
+import os
+import json
 
 from core.ZeroMQ import ZMQPublisher
 
@@ -34,20 +36,19 @@ def main(arg):
         # func = get_data_with_olpy
         raise NotImplementedError()
 
-    if arg.interval is None:
-        arg.interval = 1
-    
-    port_start = arg.port
-    types = ["sig_wl", "sig_wol", "bg_wl", "bg_wol"]
-    ports = dict()
+    with open(os.path.join(os.path.dirname(__file__), "config_getdata.json"),'r') as ff:
+        config = json.load(ff)
+    types = [key for key in config["port"].keys()]
+    # types = ["sig_wl", "sig_wol", "bg_wl", "bg_wol"]
+    ports = config["port"]
     publishers = dict()
     dataset = dict()
+    interval = config["interval"]
     for ii, _type in enumerate(types):
-        ports[_type] = port_start + ii
         publishers[_type] = ZMQPublisher(ports[_type])
 
     datetime_fmt = "%Y-%m-%d %H:%M:%S"
-    publisher_datetime = ZMQPublisher(port_start + 1000)
+    publisher_datetime = ZMQPublisher(config["port_pub"])
     datetime_start = datetime.datetime.now().strftime(datetime_fmt)
     print("start datetime:", datetime_start)
     while True:
