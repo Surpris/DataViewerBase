@@ -21,14 +21,13 @@ description = """
     get real-time images from buffer using olpy.
 """
 
-with open(os.path.join(os.path.dirname(__file__), "config_getdata.json"),'r') as ff:
+with open(os.path.join(os.path.dirname(__file__), "config_getdata.json"), 'r') as ff:
     config = json.load(ff)
 types = [key for key in config["port"].keys()]
 ports = config["port"]
 publishers = dict()
-dataset = dict()
 interval = config["interval"]
-for ii, _type in enumerate(types):
+for _type in types:
     publishers[_type] = ZMQPublisher(ports[_type])
 
 def emulate():
@@ -64,7 +63,7 @@ def main(arg):
             for data in dataset.values():
                 print(data.flatten())
             time.sleep(interval)
-        except KeyboardInterrupt as ex:
+        except KeyboardInterrupt:
             print("Keyboard interruption.")
             break
 

@@ -33,13 +33,14 @@ class DataViewerBase(QMainWindow):
     """
     # _name = DataViewerBase().__class__.__name__
 
-    def __init__(self):
+    def __init__(self, filepath):
         """
         Initialization.
         """
         super().__init__()
         self.initInnerParameters()
         self.initGui()
+        self.filepath_getdata_config = filepath
         self.initGetDataProcess()
         self.initUpdateImageProcess()
         self.initCheckWindowProcess()
@@ -79,8 +80,10 @@ class DataViewerBase(QMainWindow):
         """
         Initialize inner data.
         """
-        self.sig = None
-        self.bg =None
+        self.sig_wl = None
+        self.sig_wol =None
+        self.bg_wl = None
+        self.bg_wol =None
         self.nbr_of_sig = 0
         self.nbr_of_bg = 0
     
@@ -378,11 +381,11 @@ class DataViewerBase(QMainWindow):
         self.menuBar().addMenu(file_menu)
 
         ## Help
-        help_menu = QMenu('&Help', self)
-        help_menu.addAction('Help', self.showHelp)
-        help_menu.addAction('About...', self.showAbout)
-        self.menuBar().addSeparator()
-        self.menuBar().addMenu(help_menu)
+        # help_menu = QMenu('&Help', self)
+        # help_menu.addAction('Help', self.showHelp)
+        # help_menu.addAction('About...', self.showAbout)
+        # self.menuBar().addSeparator()
+        # self.menuBar().addMenu(help_menu)
 
 ######################## Menu bar ########################
 
@@ -457,7 +460,7 @@ class DataViewerBase(QMainWindow):
         self._timer_getData.setInterval(int(self._get_data_interval*1000))
         self.stopTimer = False
         self._thread_getData = QThread()
-        self._worker_getData = GetDataWorker2()
+        self._worker_getData = GetDataWorker3(fpath_port_config=self.filepath_getdata_config)
         self._worker_getData.sleepInterval = self._get_data_worker_sleep_interval
         
         # Start.
@@ -486,12 +489,17 @@ class DataViewerBase(QMainWindow):
     def updateData(self, obj):
         if self._isUpdatingImage is False: # In case.
             if obj is not None:
-                if self.sig is None or self.bg is None:
-                    self.sig = obj.get("sig")
-                    self.bg = obj.get("bg")
+                if self.sig_wl is None or self.sig_wol is None \
+                   or self.bg_wol is None or self.bg_wol is None:
+                    self.sig_wl = obj.get("sig_wl").copy()
+                    self.sig_wol = obj.get("sig_wol").copy()
+                    self.bg_wl = obj.get("bg_wl").copy()
+                    self.bg_wol = obj.get("bg_wol").copy()
                 else:
-                    self.sig += obj.get("sig")
-                    self.bg += obj.get("bg")
+                    self.sig_wl += obj.get("sig_wl").copy()
+                    self.sig_wol += obj.get("sig_wol").copy()
+                    self.bg_wl += obj.get("bg_wl").copy()
+                    self.bg_wol += obj.get("bg_wol").copy()
                     
                 self.label_run_number.setText(str(obj.get("run_number")))
                 if self.nbr_of_sig == 0:
@@ -528,12 +536,12 @@ class DataViewerBase(QMainWindow):
         self._isUpdatingImage = True
         try:
             with QMutexLocker(self._mutex):
-                self.pw1.data = self.sig
-                self.pw2.data = self.bg
-                self.pw3.data = self.sig - self.bg
+                self.pw1.data = self.sig_wl
+                self.pw2.data = self.sig_wol
+                self.pw3.data = self.sig_wl - self.sig_wol
                 for window in self._windows:
                     if not window.is_closed:
-                        window.data = self.sig
+                        window.data = self.sig_wl
         except Exception as ex:
             print(ex)
         self._isUpdatingImage = False

@@ -10,7 +10,9 @@ import os
 import datetime
 import numpy as np
 import time
+import json
 from PyQt4.QtCore import QThread, QMutex, QMutexLocker, pyqtSignal, QObject, pyqtSlot
+from .ZeroMQ import ZeroMQListener
 
 class WorkerThread(QThread):
     do_something = pyqtSignal()
@@ -119,6 +121,37 @@ class GetDataWorker2(Worker):
             sig = np.random.uniform(0.0, 10., (1000, 2000))
             self.data = dict(tag_start=tag_start, tag_end=tag_end, run_number=run_number,
                          nbr_of_sig=nbr_of_sig, nbr_of_bg=nbr_of_bg, bg=bg, sig=sig)
+        except Exception as e:
+            print(e)
+            self.data = None
+
+class GetDataWorker3(Worker):
+    def __init__(self, name = "", parent = None, fpath_port_config = None):
+        if fpath_port_config is None:
+            raise ValueError("fpath_port_config should be given.")
+        super().__init__(name=name, parent=parent)
+        with open(fpath_port_config, 'r') as ff:
+            config = json.load(ff)
+        self.types = [key for key in config["port"].keys()]
+        self.ports = config["port"]
+        self.listeners = dict()
+        self.interval = config["interval"]
+        for _type in self.types:
+            self.listeners[_type] = ZeroMQListener(self.ports[_type])
+
+    def _process(self):
+        try:
+            for listener in self.listeners.values():
+                listener.Shot()
+            run_number = np.random.randint(0, 2000)
+            tag_start = np.random.randint(0, 1000000)
+            tag_end = tag_start + np.random.randint(0, 100)
+            nbr_of_sig = int((tag_end - tag_start + 1)/3)
+            nbr_of_bg = (tag_end - tag_start + 1) - nbr_of_sig
+            self.data = dict(tag_start=tag_start, tag_end=tag_end, run_number=run_number,
+                         nbr_of_sig=nbr_of_sig, nbr_of_bg=nbr_of_bg)
+            for listener in self.listeners.values():
+                self.data[listener.name.decode()] = listener.data
         except Exception as e:
             print(e)
             self.data = None
