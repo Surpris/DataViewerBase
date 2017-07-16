@@ -34,7 +34,7 @@ def emulate():
     """emulate data"""
     output = dict()
     for _type in types:
-        output[_type] = np.random.uniform(100., 10., (2, 2))
+        output[_type] = np.random.uniform(100., 10., (1000, 2000))
     return output
 
 def get_data_with_olpy():
@@ -50,18 +50,20 @@ def main(arg):
 
     datetime_fmt = "%Y-%m-%d %H:%M:%S"
     publisher_datetime = ZMQPublisher(config["port_pub"])
-    datetime_start = datetime.datetime.now().strftime(datetime_fmt)
+    datetime_start = datetime.datetime.now()
     print("start datetime:", datetime_start)
     while True:
         try:
-            now = datetime.datetime.now().strftime(datetime_fmt)
+            st = time.time()
+            now = datetime.datetime.now()
             dataset = func()
             for _type in types:
                 publishers[_type].SendArray(dataset[_type], _type)
-            publisher_datetime.sendString(now, datetime_start)
-            print(now, "publish succeeded. data:")
-            for data in dataset.values():
-                print(data.flatten())
+            publisher_datetime.sendString(now.strftime(datetime_fmt), 
+                                          datetime_start.strftime(datetime_fmt))
+            print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(time.time()-st))
+            # for data in dataset.values():
+            #     print(data.flatten())
             time.sleep(interval)
         except KeyboardInterrupt:
             print("Keyboard interruption.")
