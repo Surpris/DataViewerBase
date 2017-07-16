@@ -56,16 +56,26 @@ class ZeroMQListener(QtCore.QObject):
         # Socket to talk to server
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.SUB)
+        self.port = port
+        self.subFilter = subFilter
+        self.running = False
 
-        print ("Collecting updates from zmq server")
-        # self.socket.connect("tcp://xu-bl3-anapc02:{}".format(port))
-        self.socket.connect("tcp://localhost:{}".format(port))
- 
-        self.socket.setsockopt(zmq.SUBSCRIBE, subFilter.encode())
-        self.running = True
+    def Connect(self):
+        try:
+            # self.socket.connect("tcp://xu-bl3-anapc02:{}".format(port))
+            self.socket.connect("tcp://localhost:{}".format(self.port))
+            self.socket.setsockopt(zmq.SUBSCRIBE, self.subFilter.encode())
+            self.running = True
+            
+        except Exception as ex:
+            print(ex)
 
     def Close(self):
-        self.socket.close()
+        try:
+            self.socket.close()
+            self.running = False
+        except Exception as ex:
+            print(ex)
 
     def Loop(self):
         while self.running:
@@ -79,7 +89,7 @@ class ZeroMQListener(QtCore.QObject):
             # self.sigGetData.emit(self.name)
         except Exception as ex:
             print(ex)
-            self.sigGetData.emit(self.name)
+            # self.sigGetData.emit(self.name)
 
 def RecvArray(socket, flags=0, copy=True, track=False):
     """
