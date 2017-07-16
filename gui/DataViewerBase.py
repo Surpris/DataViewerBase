@@ -13,7 +13,7 @@ import json
 import datetime
 from collections import OrderedDict
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget, QLabel, QTextList, QLineEdit
-from PyQt4.QtGui import QSpinBox, QDoubleSpinBox
+from PyQt4.QtGui import QSpinBox, QDoubleSpinBox, QIcon
 from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
 from PyQt4.QtGui import QStyle, QPalette, QColor
 from PyQt4.QtCore import pyqtSlot, QThread, QTimer, Qt, QMutex
@@ -57,7 +57,7 @@ class DataViewerBase(QMainWindow):
         self._font_size_groupbox_title = 12 # [pixel]
         self._font_size_label = 11 # [pixel]
         self._font_bold_label = True
-        self._init_window_width = 1400 # [pixel]
+        self._init_window_width = 1600 # [pixel]
         self._init_window_height = 700 # [pixel]
 
         self._get_data_interval = 1 # [sec]
@@ -317,7 +317,7 @@ class DataViewerBase(QMainWindow):
 
         ### Plotting area.
         grp1 = QGroupBox(self)
-        grp1.setTitle("Signal")
+        grp1.setTitle("SIG WL")
         font = grp1.font()
         font.setPointSize(self._font_size_groupbox_title)
         grp1.setFont(font)
@@ -325,7 +325,7 @@ class DataViewerBase(QMainWindow):
         gp1.setSpacing(10)
 
         grp2 = QGroupBox(self)
-        grp2.setTitle("BG")
+        grp2.setTitle("SIG WOL")
         font = grp2.font()
         font.setPointSize(self._font_size_groupbox_title)
         grp2.setFont(font)
@@ -333,29 +333,40 @@ class DataViewerBase(QMainWindow):
         gp2.setSpacing(10)
 
         grp3 = QGroupBox(self)
-        grp3.setTitle("Sub")
+        grp3.setTitle("BG WL")
         font = grp3.font()
         font.setPointSize(self._font_size_groupbox_title)
         grp3.setFont(font)
         gp3 = QGridLayout(grp3)
-        gp3.setSpacing(30)
+        gp3.setSpacing(10)
+
+        grp4 = QGroupBox(self)
+        grp4.setTitle("BG WOL")
+        font = grp4.font()
+        font.setPointSize(self._font_size_groupbox_title)
+        grp4.setFont(font)
+        gp4 = QGridLayout(grp4)
+        gp4.setSpacing(10)
 
         kwargs = dict(px=False, py=False, ph=False, bp=False)
         self.pw1 = PlotWindow(self, **kwargs)
         self.pw2 = PlotWindow(self, **kwargs)
         self.pw3 = PlotWindow(self, **kwargs)
+        self.pw4 = PlotWindow(self, **kwargs)
 
         gp1.addWidget(self.pw1, 0, 0)
         gp2.addWidget(self.pw2, 0, 0)
         gp3.addWidget(self.pw3, 0, 0)
+        gp4.addWidget(self.pw4, 0, 0)
 
         ### Construct the layout.
         self.grid.addWidget(group_runinfo, 0, 0)
         # self.grid.addWidget(group_settings, 0, 1)
-        self.grid.addWidget(group_func, 0, 1, 1, 2)
+        self.grid.addWidget(group_func, 0, 1)
         self.grid.addWidget(grp1, 1, 0, 2, 1)
         self.grid.addWidget(grp2, 1, 1, 2, 1)
         self.grid.addWidget(grp3, 1, 2, 2, 1)
+        self.grid.addWidget(grp4, 1, 3, 2, 1)
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
     
@@ -367,6 +378,7 @@ class DataViewerBase(QMainWindow):
         self.main_widget = QWidget(self)
         self.grid = QGridLayout(self.main_widget)
         self.grid.setSpacing(10)
+        self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), "python.png")))
 
     @footprint
     def setMenuBar(self):
@@ -549,8 +561,11 @@ class DataViewerBase(QMainWindow):
 
                 self.pw1.data = sig_wl
                 self.pw2.data = sig_wol
-                if sig_wl is not None and sig_wol is not None:
-                    self.pw3.data = sig_wl - sig_wol
+                self.pw3.data = bg_wl
+                self.pw4.data = bg_wol
+
+                # if sig_wl is not None and sig_wol is not None:
+                #     self.pw3.data = sig_wl - sig_wol
                 for window in self._windows:
                     if not window.is_closed:
                         window.data = sig_wl
@@ -561,6 +576,7 @@ class DataViewerBase(QMainWindow):
         self.pw1.updateImage()
         self.pw2.updateImage()
         self.pw3.updateImage()
+        self.pw4.updateImage()
     
 ######################## CheckWindowProcess ########################
 
