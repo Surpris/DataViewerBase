@@ -21,28 +21,29 @@ description = """
     get real-time images from buffer using olpy.
 """
 
+with open(os.path.join(os.path.dirname(__file__), "config_getdata.json"), 'r') as ff:
+    config = json.load(ff)
+types = [key for key in config["port"].keys()]
+ports = config["port"]
+publishers = dict()
+interval = config["interval"]
+for _type in types:
+    publishers[_type] = ZMQPublisher(ports[_type])
+
+process_timeout = 10 # [sec]
+def emulate():
+    """emulate data"""
+    output = dict()
+    for _type in types:
+        output[_type] = np.random.uniform(100., 10., (1000, 2000))
+        # output[_type] = np.random.uniform(100., 10., (2, 2))
+    return output
+
 def get_data_with_olpy():
     pass
 
 def main(arg):
     """main process"""
-    with open(os.path.join(os.path.dirname(__file__), "config_getdata.json"), 'r') as ff:
-        config = json.load(ff)
-    types = [key for key in config["port"].keys()]
-    ports = config["port"]
-    publishers = dict()
-    interval = config["interval"]
-    for _type in types:
-        publishers[_type] = ZMQPublisher(ports[_type])
-
-    def emulate():
-        """emulate data"""
-        output = dict()
-        for _type in types:
-            output[_type] = np.random.uniform(100., 10., (1000, 2000))
-            # output[_type] = np.random.uniform(100., 10., (2, 2))
-        return output
-    
     if arg.emulate is not None and arg.emulate:
         func = emulate
     else:
@@ -57,15 +58,20 @@ def main(arg):
         try:
             st = time.time()
             now = datetime.datetime.now()
+            delta = now - datetime_start
+            if delta.total_seconds() > process_timeout:
+                print("Emulation timeout.")
+                break
             dataset = func()
             for _type in types:
                 publishers[_type].SendArray(dataset[_type], _type)
             publisher_datetime.sendString(now.strftime(datetime_fmt), 
                                           datetime_start.strftime(datetime_fmt))
-            print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(time.time()-st))
-            for data in dataset.values():
-                print(data.flatten())
-            time.sleep(interval)
+            elapsed = time.time()-st
+            print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(elapsed))
+            # for data in dataset.values():
+            #     print(data.flatten())
+            time.sleep(interval - elapsed)
         except KeyboardInterrupt:
             print("Keyboard interruption.")
             break
