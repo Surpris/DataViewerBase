@@ -30,7 +30,8 @@ interval = config["interval"]
 for _type in types:
     publishers[_type] = ZMQPublisher(ports[_type])
 
-process_timeout = 10 # [sec]
+process_timeout = config["timeout"] # [sec]
+
 def emulate():
     """emulate data"""
     output = dict()
@@ -40,6 +41,7 @@ def emulate():
     return output
 
 def get_data_with_olpy():
+    """get data from online buffer using olpy"""
     pass
 
 def main(arg):
@@ -71,7 +73,8 @@ def main(arg):
             print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(elapsed))
             # for data in dataset.values():
             #     print(data.flatten())
-            time.sleep(interval - elapsed)
+            if interval - elapsed > 0:
+                time.sleep(interval - elapsed)
         except KeyboardInterrupt:
             print("Keyboard interruption.")
             break
