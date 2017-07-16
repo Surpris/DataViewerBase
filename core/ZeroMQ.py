@@ -55,13 +55,13 @@ class ZeroMQListener(QtCore.QObject):
 
         # Socket to talk to server
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.SUB)
         self.port = port
         self.subFilter = subFilter
         self.running = False
 
     def Connect(self):
         try:
+            self.socket = self.context.socket(zmq.SUB)
             # self.socket.connect("tcp://xu-bl3-anapc02:{}".format(port))
             self.socket.connect("tcp://localhost:{}".format(self.port))
             self.socket.setsockopt(zmq.SUBSCRIBE, self.subFilter.encode())
