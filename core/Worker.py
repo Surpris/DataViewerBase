@@ -126,16 +126,13 @@ class GetDataWorker2(Worker):
             self.data = None
 
 class GetDataWorker3(Worker):
-    def __init__(self, name = "", parent = None, fpath_port_config = None):
-        if fpath_port_config is None:
+    def __init__(self, name = "", parent = None, port = None):
+        if port is None:
             raise ValueError("fpath_port_config should be given.")
         super().__init__(name=name, parent=parent)
-        with open(fpath_port_config, 'r') as ff:
-            config = json.load(ff)
-        self.types = [key for key in config["port"].keys()]
-        self.ports = config["port"]
+        self.types = port.keys()
+        self.ports = port
         self.listeners = dict()
-        self.interval = config["interval"]
         for _type in self.types:
             self.listeners[_type] = ZeroMQListener(self.ports[_type])
 
@@ -155,10 +152,6 @@ class GetDataWorker3(Worker):
                          nbr_of_sig=nbr_of_sig, nbr_of_bg=nbr_of_bg)
             for listener in self.listeners.values():
                 self.data[listener.name.decode()] = listener.data
-
-            # Close ZMQListeners.
-            # for listener in self.listeners.values():
-            #     listener.Close()
 
         except Exception as e:
             print(e)

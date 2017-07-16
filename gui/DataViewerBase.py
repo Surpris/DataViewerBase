@@ -38,15 +38,14 @@ class DataViewerBase(QMainWindow):
         Initialization.
         """
         super().__init__()
-        self.initInnerParameters()
+        self.initInnerParameters(filepath)
         self.initGui()
-        self.filepath_getdata_config = filepath
         self.initGetDataProcess()
         self.initUpdateImageProcess()
         self.initCheckWindowProcess()
     
     @footprint
-    def initInnerParameters(self):
+    def initInnerParameters(self, filepath):
         """
         Initialize the inner parameters.
         """
@@ -68,12 +67,13 @@ class DataViewerBase(QMainWindow):
         self._check_window_interval = 1 # [sec]
 
         self._currentDir = os.path.dirname(__file__)
-        self._emulate = True
         self._online = False
         self._closing_dialog = True
 
         if os.path.exists(os.path.join(os.path.dirname(__file__), "config.json")):
             self.loadConfig()
+        if os.path.exists(filepath):
+            self.loadConfigGetData(filepath)
         
     @footprint
     def initData(self):
@@ -116,6 +116,18 @@ class DataViewerBase(QMainWindow):
         if config.get("font_bold_label") is not None:
             if isinstance(config.get("font_bold_label"), bool):
                 self._font_bold_label = config["font_bold_label"]
+        self._config = config
+    
+    def loadConfigGetData(self, filepath):
+        """
+        Load a config file of getDatawithOLPY.
+        """
+        with open(filepath,'r') as ff:
+            config_get_data = json.load(ff)
+        self._get_data_interval = config_get_data["interval"] # [sec]
+        self._get_data_worker_sleep_interval = self._get_data_interval - 0.1 # [sec]
+        self._get_data_ports = config_get_data["port"]
+        self._config_get_data = config_get_data
     
     @footprint
     def initGui(self):
@@ -234,42 +246,42 @@ class DataViewerBase(QMainWindow):
         grid_runinfo.addWidget(self.label_nbr_of_bg, 2, 3)
 
         ### Settings.
-        group_settings = QGroupBox(self)
-        group_settings.setTitle("Settings")
-        font = group_settings.font()
-        font.setPointSize(self._font_size_groupbox_title)
-        group_settings.setFont(font)
-        group_settings.resize(400, 100)
-        grid_settings = QGridLayout(group_settings)
+        # group_settings = QGroupBox(self)
+        # group_settings.setTitle("Settings")
+        # font = group_settings.font()
+        # font.setPointSize(self._font_size_groupbox_title)
+        # group_settings.setFont(font)
+        # group_settings.resize(400, 100)
+        # grid_settings = QGridLayout(group_settings)
 
-        # Update interval.
-        label_upd_rate = QLabel(self)
-        label_upd_rate.setText("Upd. interval: ")
-        font = label_upd_rate.font()
-        font.setPointSize(self._font_size_label)
-        font.setBold(self._font_bold_label)
-        label_upd_rate.setFont(font)
+        # # Update interval.
+        # label_upd_rate = QLabel(self)
+        # label_upd_rate.setText("Upd. image interval: ")
+        # font = label_upd_rate.font()
+        # font.setPointSize(self._font_size_label)
+        # font.setBold(self._font_bold_label)
+        # label_upd_rate.setFont(font)
         
-        self.spinbox_get_data_interval = QDoubleSpinBox(self)
-        self.spinbox_get_data_interval.setValue(self._get_data_interval)
-        self.spinbox_get_data_interval.setFixedWidth(100)
-        self.spinbox_get_data_interval.setAlignment(Qt.AlignRight)
-        font = self.spinbox_get_data_interval.font()
-        font.setBold(True)
-        font.setPointSize(self._font_size_label)
-        self.spinbox_get_data_interval.setFont(font)
+        # self.spinbox_upd_img_interval = QDoubleSpinBox(self)
+        # self.spinbox_upd_img_interval.setValue(self._get_data_interval)
+        # self.spinbox_upd_img_interval.setFixedWidth(100)
+        # self.spinbox_upd_img_interval.setAlignment(Qt.AlignRight)
+        # font = self.spinbox_upd_img_interval.font()
+        # font.setBold(True)
+        # font.setPointSize(self._font_size_label)
+        # self.spinbox_upd_img_interval.setFont(font)
 
-        label_upd_rate_unit = QLabel(self)
-        label_upd_rate_unit.setText("sec")
-        font = label_upd_rate_unit.font()
-        font.setPointSize(self._font_size_label)
-        font.setBold(self._font_bold_label)
-        label_upd_rate_unit.setFont(font)
+        # label_upd_rate_unit = QLabel(self)
+        # label_upd_rate_unit.setText("sec")
+        # font = label_upd_rate_unit.font()
+        # font.setPointSize(self._font_size_label)
+        # font.setBold(self._font_bold_label)
+        # label_upd_rate_unit.setFont(font)
 
         # Construct the layout.
-        grid_settings.addWidget(label_upd_rate, 0, 0, 1, 3)
-        grid_settings.addWidget(self.spinbox_get_data_interval, 0, 3)
-        grid_settings.addWidget(label_upd_rate_unit, 0, 4)
+        # grid_settings.addWidget(label_upd_rate, 0, 0, 1, 3)
+        # grid_settings.addWidget(self.spinbox_upd_img_interval, 0, 3)
+        # grid_settings.addWidget(label_upd_rate_unit, 0, 4)
 
         ### Function buttons.
         group_func = QGroupBox(self)
@@ -339,8 +351,8 @@ class DataViewerBase(QMainWindow):
 
         ### Construct the layout.
         self.grid.addWidget(group_runinfo, 0, 0)
-        self.grid.addWidget(group_settings, 0, 1)
-        self.grid.addWidget(group_func, 0, 2)
+        # self.grid.addWidget(group_settings, 0, 1)
+        self.grid.addWidget(group_func, 0, 1, 1, 2)
         self.grid.addWidget(grp1, 1, 0, 2, 1)
         self.grid.addWidget(grp2, 1, 1, 2, 1)
         self.grid.addWidget(grp3, 1, 2, 2, 1)
@@ -439,9 +451,8 @@ class DataViewerBase(QMainWindow):
             self.initData()
             for listener in self._worker_getData.listeners.values():
                 listener.Connect()
-            self._get_data_interval = self.spinbox_get_data_interval.value()
-            self._timer_getData.setInterval(int(self._get_data_interval*1000))
-            self.spinbox_get_data_interval.setEnabled(False)
+            # self._update_image_interval = self.spinbox_upd_img_interval.value()
+            # self.spinbox_upd_img_interval.setEnabled(False)
             self._timer_getData.start()
             self.brun.setText("Stop")
             if not self._timer_updImage.isActive():
@@ -459,7 +470,7 @@ class DataViewerBase(QMainWindow):
         self._timer_getData.setInterval(int(self._get_data_interval*1000))
         self.stopTimer = False
         self._thread_getData = QThread()
-        self._worker_getData = GetDataWorker3(fpath_port_config=self.filepath_getdata_config)
+        self._worker_getData = GetDataWorker3(port=self._get_data_ports)
         self._worker_getData.sleepInterval = self._get_data_worker_sleep_interval
         
         # Start.
@@ -516,7 +527,7 @@ class DataViewerBase(QMainWindow):
             self.stopTimer = False
             self.brun.setEnabled(True)
             self.brun.setText("Start")
-            self.spinbox_get_data_interval.setEnabled(True)
+            # self.spinbox_upd_img_interval.setEnabled(True)
 
 ######################## updateImageProcess ########################
 
