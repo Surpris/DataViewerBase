@@ -141,9 +141,11 @@ class GetDataWorker3(Worker):
 
     def _process(self):
         try:
-            print("process()")
+            # Shot ZMQListners
             for listener in self.listeners.values():
                 listener.Shot()
+            
+            # Set data to output.
             run_number = np.random.randint(0, 2000)
             tag_start = np.random.randint(0, 1000000)
             tag_end = tag_start + np.random.randint(0, 100)
@@ -153,6 +155,11 @@ class GetDataWorker3(Worker):
                          nbr_of_sig=nbr_of_sig, nbr_of_bg=nbr_of_bg)
             for listener in self.listeners.values():
                 self.data[listener.name.decode()] = listener.data
+
+            # Close ZMQListeners.
+            # for listener in self.listeners.values():
+            #     listener.Close()
+
         except Exception as e:
             print(e)
             self.data = None

@@ -437,6 +437,8 @@ class DataViewerBase(QMainWindow):
     def runMainProcess(self):
         if not self._timer_getData.isActive():
             self.initData()
+            for listener in self._worker_getData.listeners.values():
+                listener.Connect()
             self._get_data_interval = self.spinbox_get_data_interval.value()
             self._timer_getData.setInterval(int(self._get_data_interval*1000))
             self.spinbox_get_data_interval.setEnabled(False)
@@ -509,6 +511,8 @@ class DataViewerBase(QMainWindow):
             self._timer_getData.stop()
             self._timer_updImage.stop()
             print("timer stopped.")
+            for listener in self._worker_getData.listeners.values():
+                listener.Close()
             self.stopTimer = False
             self.brun.setEnabled(True)
             self.brun.setText("Start")
