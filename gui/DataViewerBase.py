@@ -59,11 +59,13 @@ class DataViewerBase(QMainWindow):
         self._font_bold_label = True
         self._init_window_width = 1600 # [pixel]
         self._init_window_height = 700 # [pixel]
+        self._init_button_color = "#EBF5FB"
+        self.main_bgcolor = "#FDF2E9"
 
         self._get_data_interval = 1 # [sec]
         self._get_data_worker_sleep_interval = self._get_data_interval - 0.1 # [sec]
         self._update_image_interval = 2 # [sec]
-        self.get_update_delay = 1 # [sec]
+        self._get_update_delay = 1 # [sec]
         self._check_window_interval = 1 # [sec]
 
         self._currentDir = os.path.dirname(__file__)
@@ -301,6 +303,7 @@ class DataViewerBase(QMainWindow):
         font.setPointSize(self._font_size_button)
         self.brun.setFont(font)
         self.brun.resize(400, 50)
+        self.brun.setStyleSheet("background-color:{};".format(self._init_button_color))
         self.brun.clicked.connect(self.runMainProcess)
 
         # Clear data button.
@@ -310,6 +313,7 @@ class DataViewerBase(QMainWindow):
         font.setPointSize(self._font_size_button)
         bclear.setFont(font)
         bclear.resize(400, 50)
+        bclear.setStyleSheet("background-color:{};".format(self._init_button_color))
         bclear.clicked.connect(self.initData)
 
         # New window button. 
@@ -319,6 +323,7 @@ class DataViewerBase(QMainWindow):
         font.setPointSize(self._font_size_button)
         bwindow.setFont(font)
         bwindow.resize(400, 50)
+        bwindow.setStyleSheet("background-color:{};".format(self._init_button_color))
         bwindow.clicked.connect(self.showWindow)
         
         # Construct the layout of RunInfo groupbox.
@@ -387,6 +392,7 @@ class DataViewerBase(QMainWindow):
         Initialize the main widget and the grid.
         """
         self.main_widget = QWidget(self)
+        self.setStyleSheet("background-color:{};".format(self.main_bgcolor))
         self.grid = QGridLayout(self.main_widget)
         self.grid.setSpacing(10)
         self.setWindowIcon(QIcon(os.path.join(os.path.dirname(__file__), "python.png")))
@@ -416,7 +422,7 @@ class DataViewerBase(QMainWindow):
         # help_menu = QMenu('&Help', self)
         # help_menu.addAction('Help', self.showHelp)
         # help_menu.addAction('About...', self.showAbout)
-        # self.menuBar().addSeparator()
+        self.menuBar().addSeparator()
         # self.menuBar().addMenu(help_menu)
 
 ######################## Menu bar ########################
@@ -479,7 +485,7 @@ class DataViewerBase(QMainWindow):
             self._timer_getData.start()
             self.brun.setText("Stop")
             if not self._timer_updImage.isActive():
-                time.sleep(self.get_update_delay)
+                time.sleep(self._get_update_delay)
                 self._timer_updImage.start()
         else:
             self.brun.setEnabled(False)
