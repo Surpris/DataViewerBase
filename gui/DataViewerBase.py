@@ -80,10 +80,6 @@ class DataViewerBase(QMainWindow):
         """
         Initialize inner data.
         """
-        # self.sig_wl = None
-        # self.sig_wol =None
-        # self.bg_wl = None
-        # self.bg_wol =None
         self.dataset = {"sig_wl":None, "sig_wol":None, "bg_wl":None, "bg_wol":None}
         self.nbr_of_sig = 0
         self.nbr_of_bg = 0
@@ -495,17 +491,6 @@ class DataViewerBase(QMainWindow):
                         self.dataset[key] = obj.get(key).copy()
                     elif obj.get(key) is not None:
                         self.dataset[key] += obj.get(key).copy()
-                # if self.sig_wl is None or self.sig_wol is None \
-                #    or self.bg_wol is None or self.bg_wol is None:
-                #     self.sig_wl = obj.get("sig_wl").copy()
-                #     self.sig_wol = obj.get("sig_wol").copy()
-                #     self.bg_wl = obj.get("bg_wl").copy()
-                #     self.bg_wol = obj.get("bg_wol").copy()
-                # else:
-                #     self.sig_wl += obj.get("sig_wl").copy()
-                #     self.sig_wol += obj.get("sig_wol").copy()
-                #     self.bg_wl += obj.get("bg_wl").copy()
-                #     self.bg_wol += obj.get("bg_wol").copy()
                     
                 self.label_run_number.setText(str(obj.get("run_number")))
                 if self.nbr_of_sig == 0:
