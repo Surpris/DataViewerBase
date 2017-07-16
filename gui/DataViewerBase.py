@@ -76,6 +76,7 @@ class DataViewerBase(QMainWindow):
             self.loadConfigGetData(filepath)
         
     @footprint
+    @pyqtSlot()
     def initData(self):
         """
         Initialize inner data.
@@ -290,8 +291,8 @@ class DataViewerBase(QMainWindow):
         font.setPointSize(self._font_size_groupbox_title)
         group_func.setFont(font)
         group_func.resize(400, 100)
-        box_func = QHBoxLayout(group_func)
-        box_func.setSpacing(10)
+        grid_func = QGridLayout(group_func)
+        grid_func.setSpacing(10)
 
         # Start/Stop main process button.
         self.brun = QPushButton(group_func)
@@ -301,6 +302,15 @@ class DataViewerBase(QMainWindow):
         self.brun.setFont(font)
         self.brun.resize(400, 50)
         self.brun.clicked.connect(self.runMainProcess)
+
+        # Clear data button.
+        bclear = QPushButton(group_func)
+        bclear.setText("Clear")
+        font = bclear.font()
+        font.setPointSize(self._font_size_button)
+        bclear.setFont(font)
+        bclear.resize(400, 50)
+        bclear.clicked.connect(self.initData)
 
         # New window button. 
         bwindow = QPushButton(group_func)
@@ -312,8 +322,9 @@ class DataViewerBase(QMainWindow):
         bwindow.clicked.connect(self.showWindow)
         
         # Construct the layout of RunInfo groupbox.
-        box_func.addWidget(self.brun)
-        box_func.addWidget(bwindow)
+        grid_func.addWidget(self.brun, 0, 0)
+        grid_func.addWidget(bclear, 0, 1)
+        grid_func.addWidget(bwindow, 1, 0)
 
         ### Plotting area.
         grp1 = QGroupBox(self)
