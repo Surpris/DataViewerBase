@@ -141,6 +141,7 @@ class GetDataWorker3(Worker):
 
     def _process(self):
         try:
+            print("process()")
             for listener in self.listeners.values():
                 listener.Shot()
             run_number = np.random.randint(0, 2000)

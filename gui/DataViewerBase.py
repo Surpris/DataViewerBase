@@ -80,10 +80,11 @@ class DataViewerBase(QMainWindow):
         """
         Initialize inner data.
         """
-        self.sig_wl = None
-        self.sig_wol =None
-        self.bg_wl = None
-        self.bg_wol =None
+        # self.sig_wl = None
+        # self.sig_wol =None
+        # self.bg_wl = None
+        # self.bg_wol =None
+        self.dataset = {"sig_wl":None, "sig_wol":None, "bg_wl":None, "bg_wol":None}
         self.nbr_of_sig = 0
         self.nbr_of_bg = 0
     
@@ -489,17 +490,22 @@ class DataViewerBase(QMainWindow):
     def updateData(self, obj):
         if self._isUpdatingImage is False: # In case.
             if obj is not None:
-                if self.sig_wl is None or self.sig_wol is None \
-                   or self.bg_wol is None or self.bg_wol is None:
-                    self.sig_wl = obj.get("sig_wl").copy()
-                    self.sig_wol = obj.get("sig_wol").copy()
-                    self.bg_wl = obj.get("bg_wl").copy()
-                    self.bg_wol = obj.get("bg_wol").copy()
-                else:
-                    self.sig_wl += obj.get("sig_wl").copy()
-                    self.sig_wol += obj.get("sig_wol").copy()
-                    self.bg_wl += obj.get("bg_wl").copy()
-                    self.bg_wol += obj.get("bg_wol").copy()
+                for key in self.dataset.keys():
+                    if self.dataset.get(key) is None and obj.get(key) is not None:
+                        self.dataset[key] = obj.get(key).copy()
+                    elif obj.get(key) is not None:
+                        self.dataset[key] += obj.get(key).copy()
+                # if self.sig_wl is None or self.sig_wol is None \
+                #    or self.bg_wol is None or self.bg_wol is None:
+                #     self.sig_wl = obj.get("sig_wl").copy()
+                #     self.sig_wol = obj.get("sig_wol").copy()
+                #     self.bg_wl = obj.get("bg_wl").copy()
+                #     self.bg_wol = obj.get("bg_wol").copy()
+                # else:
+                #     self.sig_wl += obj.get("sig_wl").copy()
+                #     self.sig_wol += obj.get("sig_wol").copy()
+                #     self.bg_wl += obj.get("bg_wl").copy()
+                #     self.bg_wol += obj.get("bg_wol").copy()
                     
                 self.label_run_number.setText(str(obj.get("run_number")))
                 if self.nbr_of_sig == 0:
@@ -536,12 +542,18 @@ class DataViewerBase(QMainWindow):
         self._isUpdatingImage = True
         try:
             with QMutexLocker(self._mutex):
-                self.pw1.data = self.sig_wl
-                self.pw2.data = self.sig_wol
-                self.pw3.data = self.sig_wl - self.sig_wol
+                sig_wl = self.dataset.get("sig_wl", None)
+                sig_wol = self.dataset.get("sig_wol", None)
+                bg_wl = self.dataset.get("bg_wl", None)
+                bg_wol = self.dataset.get("bg_wol", None)
+
+                self.pw1.data = sig_wl
+                self.pw2.data = sig_wol
+                if sig_wl is not None and sig_wol is not None:
+                    self.pw3.data = sig_wl - sig_wol
                 for window in self._windows:
                     if not window.is_closed:
-                        window.data = self.sig_wl
+                        window.data = sig_wl
         except Exception as ex:
             print(ex)
         self._isUpdatingImage = False
