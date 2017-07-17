@@ -15,7 +15,7 @@ from collections import OrderedDict
 from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget, QLabel, QTextList, QLineEdit
 from PyQt4.QtGui import QSpinBox, QDoubleSpinBox, QIcon
 from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
-from PyQt4.QtGui import QStyle, QPalette, QColor
+from PyQt4.QtGui import QStyle, QPalette, QColor, QPixmap
 from PyQt4.QtCore import pyqtSlot, QThread, QTimer, Qt, QMutex
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
@@ -316,6 +316,16 @@ class DataViewerBase(QMainWindow):
         bclear.setStyleSheet("background-color:{};".format(self._init_button_color))
         bclear.clicked.connect(self.initData)
 
+        # Save images button.
+        bsave = QPushButton(group_func)
+        bsave.setText("Save")
+        font = bsave.font()
+        font.setPointSize(self._font_size_button)
+        bsave.setFont(font)
+        bsave.resize(400, 50)
+        bsave.setStyleSheet("background-color:{};".format(self._init_button_color))
+        bsave.clicked.connect(self.saveData)
+
         # New window button. 
         bwindow = QPushButton(group_func)
         bwindow.setText("Window")
@@ -329,7 +339,8 @@ class DataViewerBase(QMainWindow):
         # Construct the layout of RunInfo groupbox.
         grid_func.addWidget(self.brun, 0, 0)
         grid_func.addWidget(bclear, 0, 1)
-        grid_func.addWidget(bwindow, 1, 0)
+        grid_func.addWidget(bsave, 1, 0)
+        grid_func.addWidget(bwindow, 1, 1)
 
         ### Plotting area.
         grp1 = QGroupBox(self)
@@ -490,6 +501,18 @@ class DataViewerBase(QMainWindow):
         else:
             self.brun.setEnabled(False)
             self.stopTimer = True
+    
+    @pyqtSlot()
+    def saveData(self):
+        now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        saveDataDir = os.path.join(os.path.dirname(__file__), "data")
+        if not os.path.exists(saveDataDir):
+            os.makedirs(saveDataDir)
+        for _types in self._get_data_ports.keys():
+            np.save(os.path.join(saveDataDir, "data_{0}_{1}.npy".format(now, _types)), \
+                    self.dataset[_types])
+        # self.d
+        # QPixmap.grabWindow(self.show()).save('{}_mainWindow.png'.format(now), 'png')
 
 ######################## GetDataProcess ########################
     
