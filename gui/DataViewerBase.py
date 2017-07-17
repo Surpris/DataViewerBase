@@ -504,15 +504,26 @@ class DataViewerBase(QMainWindow):
     
     @pyqtSlot()
     def saveData(self):
+        now_save = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         saveDataDir = os.path.join(os.path.dirname(__file__), "data")
+        
+        # Data.
         if not os.path.exists(saveDataDir):
             os.makedirs(saveDataDir)
         for _types in self._get_data_ports.keys():
             np.save(os.path.join(saveDataDir, "data_{0}_{1}.npy".format(now, _types)), \
                     self.dataset[_types])
+        
+        # Image.
         # self.d
         # QPixmap.grabWindow(self.show()).save('{}_mainWindow.png'.format(now), 'png')
+
+        # Status.
+        status = {"save_datetime":now_save, "Run":self.label_run_number.text(), 
+                  "StartTag":self.label_tag_start.text(), "CurrentTag":self.label_tag_end.text()}
+        with open(os.path.join(saveDataDir, "{}_status.json".format(now)), "w") as ff:
+            json.dump(status, ff)
 
 ######################## GetDataProcess ########################
     

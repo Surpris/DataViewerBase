@@ -16,6 +16,7 @@ import os
 import json
 
 from core.ZeroMQ import ZMQPublisher
+from core.OnlineSimulator import GetDataClass
 
 description = """
     get real-time images from buffer using olpy.
@@ -32,30 +33,33 @@ for _type in types:
 
 process_timeout = config["timeout"] # [sec]
 
+# GetDataClass related.
+detId = config["GetDataClass"]["detId"]
+chan = config["GetDataClass"]["channel"]
+bl = config["GetDataClass"]["bl"]
+limNumImg = config["GetDataClass"]["limNumImg"]
+
+
 def emulate():
     """emulate data"""
     output = dict()
     for _type in types:
         output[_type] = np.random.uniform(100., 10., (1000, 2000))
-        # output[_type] = np.random.uniform(100., 10., (2, 2))
     return output
-
-def get_data_with_olpy():
-    """get data from online buffer using olpy"""
-    pass
 
 def main(arg):
     """main process"""
     if arg.emulate is not None and arg.emulate:
         func = emulate
     else:
-        # func = get_data_with_olpy
-        raise NotImplementedError()
+        getDataClass = GetDataClass(detId=detId, chan=chan, bl=bl, limNumImg=limNumImg)
+        func = getDataClass.getData
 
     datetime_fmt = "%Y-%m-%d %H:%M:%S"
-    publisher_datetime = ZMQPublisher(config["port_pub"])
+    publisher_info = ZMQPublisher(config["port_pub"])
     datetime_start = datetime.datetime.now()
     print("start datetime:", datetime_start)
+    # numOfImg_total = np.zeros(6)
     while True:
         try:
             st = time.time()
@@ -64,10 +68,23 @@ def main(arg):
             if delta.total_seconds() > process_timeout:
                 print("Emulation timeout.")
                 break
-            dataset = func()
+            if arg.emulate is not None and arg.emulate:
+                dataset = func()
+                # currentRun = np.random.randint(0, 2000)
+                # tag_start = np.random.randint(0, 1000000)
+                # tag_end = tag_start + np.random.randint(0, 100)
+                # nbr_of_sig = int((tag_end - tag_start + 1)/3)
+                # nbr_of_bg = (tag_end - tag_start + 1) - nbr_of_sig
+            else:
+                _data, numOfImg, currentRun, startTag, endTag = func()
+                # numOfImg_total += numOfImg
+                # print(numOfImg_total, currentRun, startTag, endTag)
+                dataset = {"sig_wl":_data[0]+_data[2],
+                           "sig_wol":_data[1]+_data[3],
+                           "bg_wl":_data[4], "bg_wol":_data[5]}
             for _type in types:
                 publishers[_type].SendArray(dataset[_type], _type)
-            publisher_datetime.sendString(now.strftime(datetime_fmt), 
+            publisher_info.sendString(now.strftime(datetime_fmt), 
                                           datetime_start.strftime(datetime_fmt))
             elapsed = time.time()-st
             print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(elapsed))
