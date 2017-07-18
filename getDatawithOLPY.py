@@ -16,7 +16,7 @@ import os
 import json
 
 from core.ZeroMQ import ZMQPublisher
-from core.OnlineSimulator import GetDataClass
+from core.GetDataClass import GetDataClass
 
 description = """
     get real-time images from buffer using olpy.
@@ -100,7 +100,7 @@ def main(arg):
                     publishers[_type].SendArray(buff, _type)
                 
                 info = [currentRun, startTag, endTag]
-                for _type in types:
+                for _type in ["sig_wl", "sig_wol", "bg_wl", "bg_wol"]:
                     ind = signal_flag[_type]
                     num = 0
                     if isinstance(ind, int):

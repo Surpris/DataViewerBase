@@ -50,37 +50,32 @@ class GetDataClass(object):
                                      "xfel_bl_1_shutter_1_open_valid/status")
         self.startTag = -1
         self.endTag = -1
+        self.isReset = False
 
     def getData(self):
         """get data from the detector with Id `detId`. """
         st = time.time()
         currentRun = dbpy.read_runnumber_newest(self.bl)
-        # print(time.time() - st)
 
         #tag discriminator setup
         success_dbpy = False
         if self.endTag == -1:
             self.disc.analizePattern()
         self.startTag = self.disc.startTag
-        # print(time.time() - st)
 
         #initialize parameters
         image = [None for col in range(self.disc.cycle)]
         numOfImg = np.zeros(self.disc.cycle)
-        # print(time.time() - st)
 
-        #main loop
-        # for j in range(10):
         #Acquire the current newest tag and image
         newestTag = self.read.collect(self.buf, olpy.NEWESTTAG)
-        #print("newestTag ={}".format(newestTag))
+        
         col = self.disc.discriminate(newestTag)
         if image[col] is None:
             image[col] = self.buf.read_det_data(self.chan)
         else:
             image[col] += self.buf.read_det_data(self.chan)
         numOfImg[col] += 1
-        # print(time.time() - st)
         
         #repeat acquiring images backward
         for i in range(1, self.limNumImg + 1):
@@ -91,28 +86,28 @@ class GetDataClass(object):
 
             try:
                 self.read.collect(self.buf, tag)
-            except:
-                #print('DATA NOT ACQUIRED TAG = {}'.format(tag))
+            except Exception as ex:
+                print(tag, ":", ex)
                 continue
-            
-            #print(tag)
+
             col = self.disc.discriminate(tag)
             if image[col] is None:
                 image[col] = self.buf.read_det_data(self.chan)
             else:
                 image[col] += self.buf.read_det_data(self.chan)
             numOfImg[col] += 1
-        # print(time.time() - st)
+
         self.endTag = newestTag
 
-        #wait
-        # elapsed = time.time() - st
         run = dbpy.read_runnumber_newest(self.bl)
-        # print(time.time() - st)
-
-        # if dbpy.read_runstatus(self.bl, run) != 2: # (-1=not yet exist, 0=Stopped(ready to read), 1=Paused, 2=Running)
-        #     self.startTag = -1
-        #     self.endTag = -1
+        runstatus = dbpy.read_runstatus(self.bl, run)
+        if runstatus == 0: # (-1=not yet exist, 0=Stopped(ready to read), 1=Paused, 2=Running)
+            pass
+        elif runstatus != 2:
+            self.startTag = -1
+            self.endTag = -1
+        elif:
+            pass
         
         # if elapsed < self.waitSec:
         #     time.sleep(self.waitSec - elapsed)
