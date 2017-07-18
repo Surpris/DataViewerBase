@@ -40,7 +40,7 @@ chan = config["GetDataClass"]["channel"]
 bl = config["GetDataClass"]["bl"]
 limNumImg = config["GetDataClass"]["limNumImg"]
 cycle = config["GetDataClass"]["cycle"]
-signal_flag = config["GetDataClass"]["signal_flag"]
+signal_flag = config["signal_flag"]
 
 def emulate():
     """emulate data"""
@@ -89,22 +89,28 @@ def main(arg):
                 for _type in types:
                     buff = None
                     for ind in signal_flag[_type]:
-                        for ii in ind:
-                            if buff is None:
-                                buff = data[ii].copy()
-                            else:
-                                buff +=  data[ii]
+                        if isinstance(ind, int):
+                            buff = data[ind].copy()
+                        else:
+                            for ii in ind:
+                                if buff is None:
+                                    buff = data[ii].copy()
+                                else:
+                                    buff +=  data[ii]
                     publishers[_type].SendArray(buff, _type)
                 
                 info = [currentRun, startTag, endTag]
                 for _type in types:
                     ind = signal_flag[_type]
                     num = 0
-                    for ii in ind:
-                        num += numOfImg[ii]
+                    if isinstance(ind, int):
+                        num = numOfImg[ind]
+                    else:
+                        for ii in ind:
+                            num += numOfImg[ii]
                     info.append(num)
 
-                publisher_info.SendArray(info, now.strftime(datetime_fmt))
+                publisher_info.SendArray(np.array(info, dtype=int), now.strftime(datetime_fmt))
             elapsed = time.time() - st
             print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(elapsed))
             if interval - elapsed > 0:
