@@ -130,6 +130,7 @@ class DataViewerBase(QMainWindow):
         self._get_data_interval = config_get_data["interval"] # [sec]
         self._get_data_worker_sleep_interval = self._get_data_interval - 0.1 # [sec]
         self._get_data_ports = config_get_data["port"]
+        self._get_info_port = config_get_data["port_info"]
         self._config_get_data = config_get_data
     
     @footprint
@@ -491,6 +492,7 @@ class DataViewerBase(QMainWindow):
             self.initData()
             for listener in self._worker_getData.listeners.values():
                 listener.Connect()
+            self._worker_getData.listener_info.Connect()
             # self._update_image_interval = self.spinbox_upd_img_interval.value()
             # self.spinbox_upd_img_interval.setEnabled(False)
             self._timer_getData.start()
@@ -533,7 +535,7 @@ class DataViewerBase(QMainWindow):
         self._timer_getData.setInterval(int(self._get_data_interval*1000))
         self.stopTimer = False
         self._thread_getData = QThread()
-        self._worker_getData = GetDataWorker3(port=self._get_data_ports)
+        self._worker_getData = GetDataWorker3(port=self._get_data_ports, port_info=self._get_info_port)
         self._worker_getData.sleepInterval = self._get_data_worker_sleep_interval
         
         # Start.
@@ -587,6 +589,7 @@ class DataViewerBase(QMainWindow):
             print("timer stopped.")
             for listener in self._worker_getData.listeners.values():
                 listener.Close()
+            self._worker_getData.listener_info.Close()
             self.stopTimer = False
             self.brun.setEnabled(True)
             self.brun.setText("Start")
