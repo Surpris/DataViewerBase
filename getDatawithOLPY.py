@@ -30,6 +30,7 @@ publishers = dict()
 interval = config["interval"]
 for _type in types:
     publishers[_type] = ZMQPublisher(ports[_type])
+port_info = config["port_info"]
 
 process_timeout = config["timeout"] # [sec]
 
@@ -38,7 +39,8 @@ detId = config["GetDataClass"]["detId"]
 chan = config["GetDataClass"]["channel"]
 bl = config["GetDataClass"]["bl"]
 limNumImg = config["GetDataClass"]["limNumImg"]
-
+cycle = config["GetDataClass"]["cycle"]
+signal_flag = config["GetDataClass"]["signal_flag"]
 
 def emulate():
     """emulate data"""
@@ -52,14 +54,14 @@ def main(arg):
     if arg.emulate is not None and arg.emulate:
         func = emulate
     else:
-        getDataClass = GetDataClass(detId=detId, chan=chan, bl=bl, limNumImg=limNumImg)
+        getDataClass = GetDataClass(detId=detId, chan=chan, bl=bl, cycle=cycle, limNumImg=limNumImg)
         func = getDataClass.getData
 
     datetime_fmt = "%Y-%m-%d %H:%M:%S"
-    publisher_info = ZMQPublisher(config["port_pub"])
+    publisher_info = ZMQPublisher(port_info)
     datetime_start = datetime.datetime.now()
     print("start datetime:", datetime_start)
-    # numOfImg_total = np.zeros(6)
+    numOfImg_total = np.zeros(6)
     while True:
         try:
             st = time.time()
@@ -70,26 +72,41 @@ def main(arg):
                 break
             if arg.emulate is not None and arg.emulate:
                 dataset = func()
-                # currentRun = np.random.randint(0, 2000)
-                # tag_start = np.random.randint(0, 1000000)
-                # tag_end = tag_start + np.random.randint(0, 100)
-                # nbr_of_sig = int((tag_end - tag_start + 1)/3)
-                # nbr_of_bg = (tag_end - tag_start + 1) - nbr_of_sig
+                for _type in types:
+                    publishers[_type].SendArray(dataset[_type], _type)
+
+                currentRun = np.random.randint(0, 2000)
+                startTag = np.random.randint(0, 1000000)
+                endTag = startTag + np.random.randint(0, 100)
+                nbr_of_sig = int((endTag - startTag + 1)/3)
+                nbr_of_bg = (endTag - startTag + 1) - nbr_of_sig
+                info = [currentRun, startTag, endTag, nbr_of_sig, nbr_of_sig, nbr_of_bg, nbr_of_bg]
+                publisher_info.SendArray(info, now.strftime(datetime_fmt))
             else:
-                _data, numOfImg, currentRun, startTag, endTag = func()
-                # numOfImg_total += numOfImg
-                # print(numOfImg_total, currentRun, startTag, endTag)
-                dataset = {"sig_wl":_data[0]+_data[2],
-                           "sig_wol":_data[1]+_data[3],
-                           "bg_wl":_data[4], "bg_wol":_data[5]}
-            for _type in types:
-                publishers[_type].SendArray(dataset[_type], _type)
-            publisher_info.sendString(now.strftime(datetime_fmt), 
-                                          datetime_start.strftime(datetime_fmt))
-            elapsed = time.time()-st
+                data, numOfImg, currentRun, startTag, endTag = func()
+                numOfImg_total += numOfImg
+                print(numOfImg_total, currentRun, startTag, endTag)
+                for _type in types:
+                    buff = None
+                    for ind in signal_flag[_type]:
+                        for ii in ind:
+                            if buff is None:
+                                buff = data[ii].copy()
+                            else:
+                                buff +=  data[ii]
+                    publishers[_type].SendArray(buff, _type)
+                
+                info = [currentRun, startTag, endTag]
+                for _type in types:
+                    ind = signal_flag[_type]
+                    num = 0
+                    for ii in ind:
+                        num += numOfImg[ii]
+                    info.append(num)
+
+                publisher_info.SendArray(info, now.strftime(datetime_fmt))
+            elapsed = time.time() - st
             print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(elapsed))
-            # for data in dataset.values():
-            #     print(data.flatten())
             if interval - elapsed > 0:
                 time.sleep(interval - elapsed)
         except KeyboardInterrupt:

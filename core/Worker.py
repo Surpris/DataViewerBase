@@ -126,30 +126,31 @@ class GetDataWorker2(Worker):
             self.data = None
 
 class GetDataWorker3(Worker):
-    def __init__(self, name = "", parent = None, port = None):
-        if port is None:
-            raise ValueError("fpath_port_config should be given.")
+    def __init__(self, name = "", parent = None, port = None, port_info = None):
+        if port is None or port_info is None:
+            raise ValueError("Both port and port_info should be given.")
         super().__init__(name=name, parent=parent)
         self.types = port.keys()
         self.ports = port
+        self.port_info = port_info
         self.listeners = dict()
         for _type in self.types:
             self.listeners[_type] = ZeroMQListener(self.ports[_type])
+        self.listener_info = ZeroMQListener(self.port_info)
 
     def _process(self):
         try:
             # Shot ZMQListners
             for listener in self.listeners.values():
                 listener.Shot()
+            self.listener_info.Shot()
             
             # Set data to output.
-            run_number = np.random.randint(0, 2000)
-            tag_start = np.random.randint(0, 1000000)
-            tag_end = tag_start + np.random.randint(0, 100)
-            nbr_of_sig = int((tag_end - tag_start + 1)/3)
-            nbr_of_bg = (tag_end - tag_start + 1) - nbr_of_sig
-            self.data = dict(tag_start=tag_start, tag_end=tag_end, run_number=run_number,
-                         nbr_of_sig=nbr_of_sig, nbr_of_bg=nbr_of_bg)
+            currentRun, startTag, endTag, nbr_sig_wl, nbr_sig_wol, nbr_bg_wl, nbr_bg_wol = \
+                self.listener_info.data
+            self.data = dict(currentRun=currentRun, startTag=startTag, endTag=endTag,
+                             nbr_sig_wl=nbr_sig_wl, nbr_sig_wol=nbr_sig_wol,
+                             nbr_bg_wl=nbr_bg_wl, nbr_bg_wol=nbr_bg_wol)
             for listener in self.listeners.values():
                 self.data[listener.name.decode()] = listener.data
 

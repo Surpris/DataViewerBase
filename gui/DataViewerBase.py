@@ -568,13 +568,13 @@ class DataViewerBase(QMainWindow):
                     elif obj.get(key) is not None:
                         self.dataset[key] += obj.get(key).copy()
                     
-                self.label_run_number.setText(str(obj.get("run_number")))
+                self.label_run_number.setText(str(obj.get("currentRun")))
                 if self.nbr_of_sig == 0:
-                    self.label_tag_start.setText(str(obj.get("tag_start")))
-                self.label_tag_end.setText(str(obj.get("tag_end")))
+                    self.label_tag_start.setText(str(obj.get("startTag")))
+                self.label_tag_end.setText(str(obj.get("endTag")))
 
-                self.nbr_of_sig += obj.get("nbr_of_sig")
-                self.nbr_of_bg += obj.get("nbr_of_bg")
+                self.nbr_of_sig += obj.get("nbr_sig_wl")
+                self.nbr_of_bg += obj.get("nbr_bg_wl")
                 self.label_nbr_of_sig.setText(str(self.nbr_of_sig))
                 self.label_nbr_of_bg.setText(str(self.nbr_of_bg))
 
