@@ -88,6 +88,9 @@ class DataViewerBase(QMainWindow):
         self.nbr_of_bg = 0
         self.sig = None
         self.bg = None
+        self.currentRun = -1
+        self.startTag = -1
+        self.endTag = -1
     
     @footprint
     def loadConfig(self):
@@ -317,7 +320,7 @@ class DataViewerBase(QMainWindow):
         bclear.setFont(font)
         bclear.resize(400, 50)
         bclear.setStyleSheet("background-color:{};".format(self._init_button_color))
-        bclear.clicked.connect(self.initData)
+        bclear.clicked.connect(self.clearData)
 
         # Save images button.
         bsave = QPushButton(group_func)
@@ -509,6 +512,7 @@ class DataViewerBase(QMainWindow):
             self.brun.setEnabled(False)
             self.stopTimer = True
     
+    @footprint
     @pyqtSlot()
     def saveData(self):
         now_save = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -531,6 +535,12 @@ class DataViewerBase(QMainWindow):
                   "StartTag":self.label_tag_start.text(), "CurrentTag":self.label_tag_end.text()}
         with open(os.path.join(saveDataDir, "{}_status.json".format(now)), "w") as ff:
             json.dump(status, ff)
+    
+    @footprint
+    @pyqtSlot()
+    def clearData(self):
+        self.saveData()
+        self.initData()
 
 ######################## GetDataProcess ########################
     
@@ -574,8 +584,11 @@ class DataViewerBase(QMainWindow):
                         self.dataset[key] = obj.get(key).copy()
                     elif obj.get(key) is not None:
                         self.dataset[key] += obj.get(key).copy()
-                    
-                self.label_run_number.setText(str(obj.get("currentRun")))
+                currentRun = obj.get("currentRun")
+                if currentRun != self.currentRun:
+                    self.currentRun = currentRun
+                    self.saveData()
+                self.label_run_number.setText(str(self.currentRun))
                 if self.nbr_of_sig == 0:
                     self.label_tag_start.setText(str(obj.get("startTag")))
                 self.label_tag_end.setText(str(obj.get("endTag")))
@@ -695,6 +708,7 @@ class DataViewerBase(QMainWindow):
                 with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                     json.dump(self.config, ff)
                 self.stopAllTimers()
+                self.saveData()
                 event.accept()
             else:
                 event.ignore()
@@ -702,6 +716,7 @@ class DataViewerBase(QMainWindow):
             self.makeConfig()
             with open(os.path.join(os.path.dirname(__file__), "config.json"), "w") as ff:
                 json.dump(self.config, ff, indent=4)
+            self.saveData()
             self.stopAllTimers()
 
     @footprint
