@@ -24,7 +24,7 @@ class TagDiscriminator():
         status = dbpy.read_syncdatalist_float(self.field, hiTag, tagList)
         status = np.array(status)
         #print(status)
-        self.offset = tagList[np.nonzero(status)[0][0]] % self.cycle
+        self.offset = tagList[np.nonzero(status)[0][0]]
         self.startTag = startTag
     
     def discriminate(self, tagList):
@@ -51,6 +51,7 @@ class GetDataClass(object):
         self.startTag = -1
         self.endTag = -1
         self.isReset = False
+        self.currentRun = -1
 
     def getData(self):
         """get data from the detector with Id `detId`. """
@@ -59,7 +60,8 @@ class GetDataClass(object):
 
         #tag discriminator setup
         success_dbpy = False
-        if self.endTag == -1:
+        if self.endTag == -1 or self.currentRun != currentRun:
+            self.currentRun = currentRun
             self.disc.analizePattern()
         self.startTag = self.disc.startTag
 
@@ -106,7 +108,7 @@ class GetDataClass(object):
         elif runstatus != 2:
             self.startTag = -1
             self.endTag = -1
-        elif:
+        else:
             pass
         
         # if elapsed < self.waitSec:
