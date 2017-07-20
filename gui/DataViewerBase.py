@@ -585,10 +585,7 @@ class DataViewerBase(QMainWindow):
                     elif obj.get(key) is not None:
                         self.dataset[key] += obj.get(key).copy()
                 currentRun = obj.get("currentRun")
-                if currentRun != self.currentRun:
-                    self.currentRun = currentRun
-                    self.saveData()
-                self.label_run_number.setText(str(self.currentRun))
+                self.label_run_number.setText(str(currentRun))
                 if self.nbr_of_sig == 0:
                     self.label_tag_start.setText(str(obj.get("startTag")))
                 self.label_tag_end.setText(str(obj.get("endTag")))
@@ -597,6 +594,10 @@ class DataViewerBase(QMainWindow):
                 self.nbr_of_bg += obj.get("nbr_bg_wl") + obj.get("nbr_bg_wol")
                 self.label_nbr_of_sig.setText(str(self.nbr_of_sig))
                 self.label_nbr_of_bg.setText(str(self.nbr_of_bg))
+                if self.currentRun != -1 and currentRun != self.currentRun:
+                    self.saveData()
+                    self.initData()
+                self.currentRun = currentRun
 
     @footprint
     @pyqtSlot()
