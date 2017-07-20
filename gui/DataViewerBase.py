@@ -517,7 +517,7 @@ class DataViewerBase(QMainWindow):
     def saveData(self):
         now_save = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        saveDataDir = os.path.join(os.path.dirname(__file__), "data")
+        saveDataDir = os.path.join(os.path.dirname(__file__), "data", "Run{}".format(str(self.currentRun)))
         
         # Data.
         if not os.path.exists(saveDataDir):
