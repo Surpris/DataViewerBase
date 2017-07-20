@@ -162,10 +162,10 @@ class PlotWindow(QDialog):
         self.iw.scene().sigMouseMoved.connect(mouseMoved)
 
         # Contrast/color control
-        hist = pg.HistogramLUTItem()
-        hist.setImageItem(self.iw)
-        hist.setMaximumWidth(self._subplot_size)
-        self.glw.addItem(hist)
+        self.hist = pg.HistogramLUTItem()
+        self.hist.setImageItem(self.iw)
+        self.hist.setMaximumWidth(self._subplot_size)
+        self.glw.addItem(self.hist)
 
         # Plot area for histogram.
         self._is_ph = self.kwargs.get("ph", True)
@@ -212,6 +212,11 @@ class PlotWindow(QDialog):
                 if self._is_emulate:
                     self.data = np.random.normal(100, 10, (100, 100))
                 self.iw.setImage(self.data)
+                # self.hist.vb.setLimits(yMin=self.data.min(), yMax=self.data.max())
+                if self.checkbox_logscale.isChecked:
+                    # if self.data.min() < 0:
+                    #     self.hist.vb.setLimits(yMin=0.1, yMax=self.data.max())
+                    self.hist.plot.setLogMode(False,True)
                 if self._is_px:
                     self.px.plot(self.data.mean(axis=1), np.arange(self.data.shape[0]), clear=True)
                 if self._is_py:
