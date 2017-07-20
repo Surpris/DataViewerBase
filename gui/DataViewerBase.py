@@ -523,8 +523,8 @@ class DataViewerBase(QMainWindow):
                     self.dataset[_types])
         
         # Image.
-        # self.d
-        # QPixmap.grabWindow(self.show()).save('{}_mainWindow.png'.format(now), 'png')
+        saveScn = os.path.join(saveDataDir, "{}_screenshot.png".format(now))
+        QPixmap.grabWindow(self.winId()).save(saveScn, 'png')
 
         # Status.
         status = {"save_datetime":now_save, "Run":self.label_run_number.text(), 
