@@ -83,38 +83,51 @@ def main(arg):
                 info = [currentRun, startTag, endTag, nbr_of_sig, nbr_of_sig, nbr_of_bg, nbr_of_bg]
                 publisher_info.SendArray(info, now.strftime(datetime_fmt))
             else:
-                data, numOfImg, currentRun, startTag, endTag = func()
-                numOfImg_total += numOfImg
-                print(numOfImg_total, currentRun, startTag, endTag)
-                for _type in types:
-                    buff = None
-                    for ind in signal_flag[_type]:
+                try:
+                    data, numOfImg, currentRun, startTag, endTag = func()
+                    numOfImg_total += numOfImg
+                    print(numOfImg_total, currentRun, startTag, endTag)
+                    for _type in types:
+                        # buff = None
+                        if _type == "sig_wl":
+                            buff = data[0] + data[2]
+                        elif _type == "sig_wol":
+                            buff = data[1] + data[3]
+                        elif _type == "bg_wl":
+                            buff = data[4]
+                        else:
+                            buff = data[5]
+                        # for ind in signal_flag[_type]:
+                        #     print(_type, ind)
+                        #     if isinstance(ind, int):
+                        #         buff = data[ind].copy()
+                        #     else:
+                        #         for ii in ind:
+                        #             if buff is None:
+                        #                 buff = data[ii].copy()
+                        #             else:
+                        #                 buff += data[ii]
+                        publishers[_type].SendArray(buff, _type)
+                    
+                    info = [currentRun, startTag, endTag]
+                    for _type in ["sig_wl", "sig_wol", "bg_wl", "bg_wol"]:
+                        ind = signal_flag[_type]
+                        num = 0
                         if isinstance(ind, int):
-                            buff = data[ind].copy()
+                            num = numOfImg[ind]
                         else:
                             for ii in ind:
-                                if buff is None:
-                                    buff = data[ii].copy()
-                                else:
-                                    buff +=  data[ii]
-                    publishers[_type].SendArray(buff, _type)
-                
-                info = [currentRun, startTag, endTag]
-                for _type in ["sig_wl", "sig_wol", "bg_wl", "bg_wol"]:
-                    ind = signal_flag[_type]
-                    num = 0
-                    if isinstance(ind, int):
-                        num = numOfImg[ind]
-                    else:
-                        for ii in ind:
-                            num += numOfImg[ii]
-                    info.append(num)
+                                num += numOfImg[ii]
+                        info.append(num)
 
-                publisher_info.SendArray(np.array(info, dtype=int), now.strftime(datetime_fmt))
-            elapsed = time.time() - st
-            print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(elapsed))
-            if interval - elapsed > 0:
-                time.sleep(interval - elapsed)
+                    publisher_info.SendArray(np.array(info, dtype=int), now.strftime(datetime_fmt))
+                    elapsed = time.time() - st
+                    print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(elapsed))
+                except Exception as ex:
+                    elapsed = time.time() - st
+                    print(ex)
+                if interval - elapsed > 0:
+                    time.sleep(interval - elapsed)
         except KeyboardInterrupt:
             print("Keyboard interruption.")
             break

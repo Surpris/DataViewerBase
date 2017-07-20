@@ -164,7 +164,7 @@ class PlotWindow(QDialog):
         # Contrast/color control
         self.hist = pg.HistogramLUTItem()
         self.hist.setImageItem(self.iw)
-        self.hist.setMaximumWidth(self._subplot_size)
+        self.hist.setMaximumWidth(self._subplot_size*1.5)
         self.glw.addItem(self.hist)
 
         # Plot area for histogram.
