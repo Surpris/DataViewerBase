@@ -86,6 +86,8 @@ class DataViewerBase(QMainWindow):
         self.dataset = {"sig_wl":None, "sig_wol":None, "bg_wl":None, "bg_wol":None}
         self.nbr_of_sig = 0
         self.nbr_of_bg = 0
+        self.sig = None
+        self.bg = None
     
     @footprint
     def loadConfig(self):
@@ -345,7 +347,8 @@ class DataViewerBase(QMainWindow):
 
         ### Plotting area.
         grp1 = QGroupBox(self)
-        grp1.setTitle("SIG WL")
+        # grp1.setTitle("SIG WL")
+        grp1.setTitle("SIG")
         font = grp1.font()
         font.setPointSize(self._font_size_groupbox_title)
         grp1.setFont(font)
@@ -353,7 +356,8 @@ class DataViewerBase(QMainWindow):
         gp1.setSpacing(10)
 
         grp2 = QGroupBox(self)
-        grp2.setTitle("SIG WOL")
+        # grp2.setTitle("SIG WOL")
+        grp2.setTitle("BG")
         font = grp2.font()
         font.setPointSize(self._font_size_groupbox_title)
         grp2.setFont(font)
@@ -361,31 +365,32 @@ class DataViewerBase(QMainWindow):
         gp2.setSpacing(10)
 
         grp3 = QGroupBox(self)
-        grp3.setTitle("BG WL")
+        # grp3.setTitle("BG WL")
+        grp3.setTitle("SIg - BG")
         font = grp3.font()
         font.setPointSize(self._font_size_groupbox_title)
         grp3.setFont(font)
         gp3 = QGridLayout(grp3)
         gp3.setSpacing(10)
 
-        grp4 = QGroupBox(self)
-        grp4.setTitle("BG WOL")
-        font = grp4.font()
-        font.setPointSize(self._font_size_groupbox_title)
-        grp4.setFont(font)
-        gp4 = QGridLayout(grp4)
-        gp4.setSpacing(10)
+        # grp4 = QGroupBox(self)
+        # grp4.setTitle("BG WOL")
+        # font = grp4.font()
+        # font.setPointSize(self._font_size_groupbox_title)
+        # grp4.setFont(font)
+        # gp4 = QGridLayout(grp4)
+        # gp4.setSpacing(10)
 
         kwargs = dict(px=False, py=False, ph=False, bp=False)
         self.pw1 = PlotWindow(self, **kwargs)
         self.pw2 = PlotWindow(self, **kwargs)
         self.pw3 = PlotWindow(self, **kwargs)
-        self.pw4 = PlotWindow(self, **kwargs)
+        # self.pw4 = PlotWindow(self, **kwargs)
 
         gp1.addWidget(self.pw1, 0, 0)
         gp2.addWidget(self.pw2, 0, 0)
         gp3.addWidget(self.pw3, 0, 0)
-        gp4.addWidget(self.pw4, 0, 0)
+        # gp4.addWidget(self.pw4, 0, 0)
 
         ### Construct the layout.
         self.grid.addWidget(group_runinfo, 0, 0)
@@ -394,7 +399,7 @@ class DataViewerBase(QMainWindow):
         self.grid.addWidget(grp1, 1, 0, 2, 1)
         self.grid.addWidget(grp2, 1, 1, 2, 1)
         self.grid.addWidget(grp3, 1, 2, 2, 1)
-        self.grid.addWidget(grp4, 1, 3, 2, 1)
+        # self.grid.addWidget(grp4, 1, 3, 2, 1)
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
     
@@ -575,8 +580,8 @@ class DataViewerBase(QMainWindow):
                     self.label_tag_start.setText(str(obj.get("startTag")))
                 self.label_tag_end.setText(str(obj.get("endTag")))
 
-                self.nbr_of_sig += obj.get("nbr_sig_wl")
-                self.nbr_of_bg += obj.get("nbr_bg_wl")
+                self.nbr_of_sig += obj.get("nbr_sig_wl") + obj.get("nbr_sig_wol")
+                self.nbr_of_bg += obj.get("nbr_bg_wl") + obj.get("nbr_bg_wol")
                 self.label_nbr_of_sig.setText(str(self.nbr_of_sig))
                 self.label_nbr_of_bg.setText(str(self.nbr_of_bg))
 
@@ -612,11 +617,19 @@ class DataViewerBase(QMainWindow):
                 sig_wol = self.dataset.get("sig_wol", None)
                 bg_wl = self.dataset.get("bg_wl", None)
                 bg_wol = self.dataset.get("bg_wol", None)
-
-                self.pw1.data = sig_wl
-                self.pw2.data = sig_wol
-                self.pw3.data = bg_wl
-                self.pw4.data = bg_wol
+                if self.sig is None or self.bg is None:
+                    self.sig = sig_wl + sig_wol
+                    self.bg = bg_wl + bg_wol
+                else:
+                    self.sig += sig_wl + sig_wol
+                    self.bg += bg_wl + bg_wol
+                # print(self.sig.dtype)
+                # buff1 = self.sig / float(self.nbr_of_sig)
+                self.pw1.data = self.sig / float(self.nbr_of_sig)
+                # buff1 = self.bg / float(self.nbr_of_bg)
+                self.pw2.data = self.bg / float(self.nbr_of_bg)
+                self.pw3.data = self.pw1.data - self.pw2.data
+                # self.pw4.data = bg_wol
 
                 # if sig_wl is not None and sig_wol is not None:
                 #     self.pw3.data = sig_wl - sig_wol
@@ -627,10 +640,11 @@ class DataViewerBase(QMainWindow):
             print(ex)
         self._isUpdatingImage = False
         
-        self.pw1.updateImage()
-        self.pw2.updateImage()
-        self.pw3.updateImage()
-        self.pw4.updateImage()
+        if self.sig is not None and self.bg is not None:
+            self.pw1.updateImage()
+            self.pw2.updateImage()
+            self.pw3.updateImage()
+        # self.pw4.updateImage()
     
 ######################## CheckWindowProcess ########################
 
