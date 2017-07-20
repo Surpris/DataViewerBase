@@ -32,3 +32,6 @@ _ReSharper*/
 packages/
 *.json
 __pycache__*/
+
+data*/
+images*/
