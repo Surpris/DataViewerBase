@@ -122,7 +122,7 @@ def main(arg):
 
                     publisher_info.SendArray(np.array(info, dtype=int), now.strftime(datetime_fmt))
                     elapsed = time.time() - st
-                    print(now, "publish succeeded. Elapsed time: {0:.4f} sec.".format(elapsed))
+                    print("[{0}]: publish succeeded. Elapsed time: {1:.4f} sec.".format(now, elapsed))
                 except Exception as ex:
                     elapsed = time.time() - st
                     print(ex)

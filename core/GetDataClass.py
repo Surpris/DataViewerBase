@@ -3,9 +3,13 @@
 import olpy
 import dbpy
 import time
+import datetime
 import numpy as np
 
 class TagDiscriminator():
+    """
+    Class for discrimination of tags.
+    """
     def __init__(self, bl, chan, cycle, offset, field):
         self.bl = bl
         self.chan = chan
@@ -14,6 +18,11 @@ class TagDiscriminator():
         self.field = field
         
     def analizePattern(self):
+        """
+        make a pattern of tags.
+        """
+        now = datetime.datetime.now()
+        print("[{}]: Analyze pattern".format(now))
         numOfTags = 12
         run = dbpy.read_runnumber_newest(self.bl)
         run -= 0
