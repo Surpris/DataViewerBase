@@ -68,10 +68,12 @@ class GetDataClass(object):
         currentRun = dbpy.read_runnumber_newest(self.bl)
 
         #tag discriminator setup
-        success_dbpy = False
+        # success_dbpy = False
         if self.endTag == -1 or self.currentRun != currentRun:
-            self.currentRun = currentRun
-            self.disc.analizePattern()
+            runstatus = dbpy.read_runstatus(self.bl, currentRun)
+            if runstatus == 2: # Analyse patterns after the latest Run start running.
+                self.currentRun = currentRun
+                self.disc.analizePattern()
         self.startTag = self.disc.startTag
 
         #initialize parameters
