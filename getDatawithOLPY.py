@@ -15,8 +15,10 @@ import zmq
 import os
 import json
 
-from core.ZeroMQ import ZMQPublisher
-from core.GetDataClass import GetDataClass
+sys.path.append("../")
+sys.path.append("../../")
+from DataViewerBase.core import ZMQPublisher
+from DataViewerBase.core import GetDataClass
 
 description = """
     get real-time images from buffer using olpy.

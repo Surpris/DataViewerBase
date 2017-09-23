@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from gui import DataViewerBase
+import sys
+sys.path.append("../../")
+sys.path.append("../")
+from DataViewerBase.gui import DataViewerBase
 from pyqtgraph.Qt import QtGui
 
 def main(filepath):

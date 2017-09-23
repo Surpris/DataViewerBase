@@ -1,7 +1,10 @@
 # coding: utf-8
 
-import olpy
-import dbpy
+try:
+    import olpy
+    import dbpy
+except:
+    pass
 import time
 import datetime
 import numpy as np

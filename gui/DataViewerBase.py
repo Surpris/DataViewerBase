@@ -21,10 +21,10 @@ from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
 
-sys.path.append("../")
-from gui import PlotWindow
-from core.Worker import *
-from core.decorator import footprint
+# sys.path.append("../")
+from ..gui import PlotWindow
+from ..core.Worker import *
+from ..core.decorator import footprint
 
 class DataViewerBase(QMainWindow):
     """

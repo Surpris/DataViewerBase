@@ -11,8 +11,5 @@ if __DATAVIEWERBASE_SETUP__:
     del _sys
 else:
     from . import core
-    from .core import *
     from . import gui
-    from .gui import *
     from . import anatools
-    from .anatools import *

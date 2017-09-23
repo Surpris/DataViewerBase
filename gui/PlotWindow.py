@@ -20,8 +20,8 @@ from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 pg.setConfigOptions(imageAxisOrder='row-major')
 
-sys.path.append("../")
-from core.decorator import footprint
+# sys.path.append("../")
+from ..core.decorator import footprint
 
 class PlotWindow(QDialog):
     """
