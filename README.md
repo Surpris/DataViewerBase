@@ -6,7 +6,7 @@ It was created to accumulate the data measured by the camera at SACLA in SPring-
 
 ## System requirements
 The following packages and versions are required to use DataViewerBase.   
-Among these, `olpy` and` stpy` are modules used on SACLA's HPC.   
+Among these, `olpy` and `stpy` are modules used on SACLA's HPC.   
 It is not necessary if you only check the operation.   
 
 * Python &geq; 3
