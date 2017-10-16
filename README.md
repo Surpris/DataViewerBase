@@ -19,18 +19,18 @@ It is not necessary if you only check the operation.
 ## how to use
 1. Open two terminals (command prompt). For convenience, we will call them A and B.
 1. On terminal A, move to the `DataViewerBase` directory (folder).
-     + This will start retrieving data from the database.
+    + This will start retrieving data from the database.
 1. Execute `python getDatawithOLPY.py`.
 1. On Terminal B, move to the `DataViewerBase` directory (folder).
 1. Execute `python main.py`.
-     + This will launch the GUI.
+    + This will launch the GUI.
 
 ### Functions of DataViewerBase
 * By pressing the `Start` button, data accumulation and display will start.
 * Clear data by pressing `Clear` button.
 * Save data at that point by pressing the `Save` button.
 * By pressing the `Window` button, you can check the data in another window.
-     + &8251; This is a function not particularly necessary on 2017/10/15.
+    + &8251; This is a function not particularly necessary on 2017/10/15.
 
 ## Settings
 Port and other settings are done with two files.
