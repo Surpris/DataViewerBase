@@ -9,10 +9,10 @@ DataViewerBase を使用するには以下のパッケージおよびバージ�
 これらのうち`olpy`および`stpy`はSACLAのHPC上で利用されるモジュールです。   
 動作確認をするだけであれば必要ありません。   
 
-* Python >= 3
-* PyQt4 (pyqt >= 4.11)
-* pyqtgraph >= 0.10.0
-* pyzmq >= 16.0
+* Python &geq; 3
+* PyQt4 (pyqt &geq; 4.11)
+* pyqtgraph &geq; 0.10.0
+* pyzmq &geq; 16.0
 * olpy
 * dbpy
 
@@ -31,6 +31,47 @@ DataViewerBase を使用するには以下のパッケージおよびバージ�
 * `Save`ボタンを押すことでその時点でのデータを保存します。
 * `Window`ボタンを押すことで、別のウィンドウでデータを確認できます。
     + &#8251;2017/10/15 時点では特に必要のない機能です。
+
+## ポートなどの設定
+ポートなどの設定は二つのファイルで行います。   
+
+### `/config_getdata.json`
+`getDatawithOLPY.py`で利用する設定です。   
+
+```
+# /config_getdata.json
+
+* port : port numbrt where each data is sent
+    + sig_wl  : for signal with laser
+    + sig_wol : for signal without laser
+    + bg_wl   : for BG with laser
+    + bg_wol  : for BG without laser
+* port_info : port number for miscellaneous information
+* interval : interval between sending data (sec)
+* timeout : period of work of getDatawithOLPY.py
+* GetDataClass : parameters for GetDataClass
+    + detId     : ID of detector
+    + channel   : channel (currently unused)
+    + cycle     : # of tags in one cycle (or measurement)
+    + bl        : beamline number
+    + limNumImg : limit of # of images obtained at once
+* signal_flag : index of each data type in one cycle
+```
+
+### `/gui/config.json`
+`DataViewerBase.py`で利用する設定です。   
+
+```
+# /gui/config.json
+
+* online : true = online mode
+* closing_dialog : true = show a dialog when closing the GUI
+* currentDir : current directory
+* emulate : true = emulate mode (currently unused)
+* font_size_button : font size of buttons
+* font_size_label : font size of labels
+* font_size_groupbox_title : font size of title of each groupbox
+```
 
 ## 構成
 DataViewerBaseパッケージの構成は次図の通りです。   
@@ -62,7 +103,8 @@ DataViewerBase/
         a script which starts to get and send data.
     + main.py
         a script which starts DataViewerBase.
-```   
+```
+
 
 ## データフロー
 SACLAのサーバに蓄積された測定データを`getDatawithOLPY.py`によって取得します。   
