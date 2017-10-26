@@ -32,6 +32,10 @@ It is not necessary if you only check the operation.
 * By pressing the `Window` button, you can check the data in another window.
     + &8251; This is a function not particularly necessary on 2017/10/15.
 
+### Problems found on 2017/10/15
+The reference tag can not be accurately judged at the time of Run switching and therefore the signal and BG may not be correctly discriminated in some cases.
+Please restart `getDatawithOLPY.py` when such symptoms appear.
+
 ## Settings
 Port and other settings are done with two files.
 
