@@ -12,16 +12,28 @@ import json
 import time
 import datetime
 import numpy as np
-from PyQt4.QtGui import QGridLayout, QDialog, QPushButton, QLabel, QGroupBox, QCheckBox, QHBoxLayout
-from PyQt4.QtGui import QWidget
-from PyQt4.QtCore import pyqtSlot, Qt
+import importlib
+spam_spec = importlib.util.find_spec("PyQt4")
+found = spam_spec is not None
+if found is True:
+    from PyQt4.QtGui import QGridLayout, QDialog, QPushButton, QLabel, QGroupBox, QCheckBox, QHBoxLayout
+    from PyQt4.QtGui import QWidget
+    from PyQt4.QtCore import pyqtSlot, Qt
+else:
+    spam_spec = importlib.util.find_spec("PyQt5")
+    found = spam_spec is not None
+    if found is True:
+        from PyQt5.QtWidgets import QGridLayout, QDialog, QPushButton, QLabel, QGroupBox, QCheckBox, QHBoxLayout
+        from PyQt5.QtWidgets import QWidget
+        from PyQt5.QtCore import pyqtSlot, Qt
+    else:
+        raise ModuleNotFoundError("No module named either 'PyQt4' or 'PyQt5'")
 from pyqtgraph.Qt import QtGui
 from pyqtgraph.Qt import QtCore
 import pyqtgraph as pg
 pg.setConfigOptions(imageAxisOrder='row-major')
 
-# sys.path.append("../")
-from ..core.decorator import footprint
+# from .core.deorator import footprint
 
 class PlotWindow(QDialog):
     """
@@ -40,21 +52,24 @@ class PlotWindow(QDialog):
         self.initInnerParameters()
         self.initGui()
 
-    @footprint
+    
     def initInnerParameters(self):
         """
         Initialize the inner parameters.
         """
         self.is_closed = False
         self._timer = QtCore.QTimer()
-        self._is_emulate = False
+        self._timer.timeout.connect(self.updateImage)
+        self._is_emulate = True
         self.data = None
         self._init_window_width = 600 # [pixel]
         self._init_window_height = 600 # [pixel]
         self._subplot_size = 100 # [pixel]
         self._font_size_groupbox_title = 11 # [pixel]
+        self._update_interval = 1000
+        self._plot_count = 0
     
-    @footprint
+    
     def initGui(self):
         """
         Initialize the GUI.
@@ -127,7 +142,7 @@ class PlotWindow(QDialog):
         grid.addWidget(widget_coor_value, 1, 0)
         grid.addWidget(self.glw, 2, 0)
 
-    @footprint
+    
     def initPlotArea(self):
         """
         Initialize the plot area.
@@ -143,10 +158,21 @@ class PlotWindow(QDialog):
             self.px.setMaximumWidth(self._subplot_size)
 
         # Plot area for the image.
-        p1 = self.glw.addPlot()
-        p1.setAspectLocked(True)
+        self.iw_tickBottom = {0:-50, 50:0, 100:50}
+        self.iw_axBottom = pg.AxisItem(orientation="bottom")
+        self.iw_axBottom.setTicks([self.iw_tickBottom.items()])
+        self.iw_axBottom.setLabel("Value1")
+
+        self.iw_tickLeft = {0:0, 50:50, 100:100}
+        self.iw_axLeft = pg.AxisItem(orientation="left")
+        self.iw_axLeft.setTicks([self.iw_tickLeft.items()])
+        self.iw_axLeft.setLabel("Value2")
+        self.p1 = self.glw.addPlot(
+            axisItems={"bottom":self.iw_axBottom, "left":self.iw_axLeft}
+        )
+        self.p1.setAspectLocked(True)
         self.iw = pg.ImageItem()
-        p1.addItem(self.iw)
+        self.p1.addItem(self.iw)
 
         def mouseMoved(pos):
             try:
@@ -183,7 +209,7 @@ class PlotWindow(QDialog):
             self.py.setMaximumHeight(self._subplot_size)
 
 
-    @footprint
+    
     @pyqtSlot()
     def pushButton(self):
         """
@@ -191,26 +217,32 @@ class PlotWindow(QDialog):
         """
         try:
             if not self._timer.isActive():
-                self._timer.setInterval(1000)
-                self._timer.timeout.connect(self.updateImage)
+                self._timer.setInterval(self._update_interval)
                 self._timer.start()
                 self.bp.setText("Stop plotting")
             else:
                 self._timer.stop()
+                self._plot_count = 0
                 self.bp.setText("Start plotting")
         except Exception as ex:
             print(ex)
 
-    # @footprint
+    # 
     @pyqtSlot()
     def updateImage(self):
         """
         Update the image and the other plots.
         """
         try:
+            if self._is_emulate:
+                self.data = np.random.normal(100, 10, (100, 100))
             if self.data is not None:
-                if self._is_emulate:
-                    self.data = np.random.normal(100, 10, (100, 100))
+                self.iw_tickLeft = {
+                    0:self._plot_count*100, 
+                    50:self._plot_count*100+50, 
+                    100:self._plot_count*100+100
+                }
+                self.iw_axLeft.setTicks([self.iw_tickLeft.items()])
                 self.iw.setImage(self.data)
                 # self.hist.vb.setLimits(yMin=self.data.min(), yMax=self.data.max())
                 if self.checkbox_logscale.isChecked:
@@ -228,11 +260,21 @@ class PlotWindow(QDialog):
                                 stepMode=True, fillLevel=0,brush=(0,0,255,150))
         except Exception as ex:
             print(ex)
+        self._plot_count += 1
 
-    @footprint
+    
     def closeEvent(self, event):
         self.is_closed = True
         if self._timer.isActive():
             print("Stop the active timer.")
             self._timer.stop()
         self.data = None
+
+def main():
+    app = QtGui.QApplication([])
+    mw = PlotWindow()
+    mw.show()
+    app.exec_()
+
+if __name__ == "__main__":
+    main()

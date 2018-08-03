@@ -12,19 +12,33 @@ import os
 import json
 import datetime
 from collections import OrderedDict
-from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget, QLabel, QTextList, QLineEdit
-from PyQt4.QtGui import QSpinBox, QDoubleSpinBox, QIcon
-from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
-from PyQt4.QtGui import QStyle, QPalette, QColor, QPixmap
-from PyQt4.QtCore import pyqtSlot, QThread, QTimer, Qt, QMutex
+import importlib
+spam_spec = importlib.util.find_spec("PyQt4")
+found = spam_spec is not None
+if found is True:
+    from PyQt4.QtGui import QMainWindow, QGridLayout, QMenu, QWidget, QLabel, QLineEdit
+    from PyQt4.QtGui import QSpinBox, QDoubleSpinBox, QIcon
+    from PyQt4.QtGui import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
+    from PyQt4.QtGui import QStyle, QPalette, QColor, QPixmap
+    from PyQt4.QtCore import pyqtSlot, QThread, QTimer, Qt, QMutex
+else:
+    spam_spec = importlib.util.find_spec("PyQt5")
+    found = spam_spec is not None
+    if found is True:
+        from PyQt5.QtWidgets import QMainWindow, QGridLayout, QMenu, QWidget, QLabel, QLineEdit
+        from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QStyle
+        from PyQt5.QtWidgets import QPushButton, QMessageBox, QGroupBox, QDialog, QVBoxLayout, QHBoxLayout
+        from PyQt5.QtGui import QIcon, QPalette, QColor, QPixmap
+        from PyQt5.QtCore import pyqtSlot, QThread, QTimer, Qt, QMutex
+
 from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
 
 # sys.path.append("../")
-from ..gui import PlotWindow
-from ..core.Worker import *
-from ..core.decorator import footprint
+from PlotWindow import PlotWindow
+from core.Worker import *
+from core.decorator import footprint
 
 class DataViewerBase(QMainWindow):
     """
@@ -33,7 +47,7 @@ class DataViewerBase(QMainWindow):
     """
     # _name = DataViewerBase().__class__.__name__
 
-    def __init__(self, filepath):
+    def __init__(self, filepath=""):
         """
         Initialization.
         """
@@ -74,8 +88,9 @@ class DataViewerBase(QMainWindow):
 
         if os.path.exists(os.path.join(os.path.dirname(__file__), "config.json")):
             self.loadConfig()
-        if os.path.exists(filepath):
-            self.loadConfigGetData(filepath)
+        if not os.path.exists(os.path.join(os.path.dirname(__file__), "config_getdata.json")):
+            raise FileNotFoundError("config_getdata.json")
+        self.loadConfigGetData()
         
     @footprint
     @pyqtSlot()
@@ -126,11 +141,11 @@ class DataViewerBase(QMainWindow):
                 self._font_bold_label = config["font_bold_label"]
         self._config = config
     
-    def loadConfigGetData(self, filepath):
+    def loadConfigGetData(self):
         """
         Load a config file of getDatawithOLPY.
         """
-        with open(filepath,'r') as ff:
+        with open(os.path.join(os.path.dirname(__file__), "config_getdata.json"),'r') as ff:
             config_get_data = json.load(ff)
         self._get_data_interval = config_get_data["interval"] # [sec]
         self._get_data_worker_sleep_interval = self._get_data_interval - 0.1 # [sec]
@@ -527,8 +542,8 @@ class DataViewerBase(QMainWindow):
                     self.dataset[_types])
         
         # Image.
-        saveScn = os.path.join(saveDataDir, "{}_screenshot.png".format(now))
-        QPixmap.grabWindow(self.winId()).save(saveScn, 'png')
+        # saveScn = os.path.join(saveDataDir, "{}_screenshot.png".format(now))
+        # QPixmap.grabWindow(self.winId()).save(saveScn, 'png')
 
         # Status.
         status = {"save_datetime":now_save, "Run":self.label_run_number.text(), 

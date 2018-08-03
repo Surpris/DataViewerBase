@@ -11,7 +11,16 @@ import datetime
 import numpy as np
 import time
 import json
-from PyQt4.QtCore import QThread, QMutex, QMutexLocker, pyqtSignal, QObject, pyqtSlot
+import importlib
+spam_spec = importlib.util.find_spec("PyQt4")
+found = spam_spec is not None
+if found is True:
+    from PyQt4.QtCore import QThread, QMutex, QMutexLocker, pyqtSignal, QObject, pyqtSlot
+else:
+    spam_spec = importlib.util.find_spec("PyQt5")
+    found = spam_spec is not None
+    if found is True:
+        from PyQt5.QtCore import QThread, QMutex, QMutexLocker, pyqtSignal, QObject, pyqtSlot
 from .ZeroMQ import ZeroMQListener
 
 class WorkerThread(QThread):

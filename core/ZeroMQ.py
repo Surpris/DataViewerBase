@@ -7,7 +7,18 @@ Created on Thu Jul 14 15:53 2017
 @author: Surpris
 """
 
-from PyQt4 import QtCore
+import importlib
+spam_spec = importlib.util.find_spec("PyQt4")
+found = spam_spec is not None
+if found is True:
+    from PyQt4 import QtCore
+else:
+    spam_spec = importlib.util.find_spec("PyQt5")
+    found = spam_spec is not None
+    if found is True:
+        from PyQt5 import QtCore
+    else:
+        raise ModuleNotFoundError("No module named either 'PyQt4' or 'PyQt5'")
 import numpy as np
 import zmq
 import sys, signal
